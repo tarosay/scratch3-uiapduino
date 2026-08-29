@@ -41,10 +41,65 @@ scratch-vm / scratch-gui / scratch-desktop を clone した上に、このリポ
 
 **⚠ Chrome か Edge が要ります。**
 
+**⚠ Linux では先に udev ルールの追加が要ります**（「[Linux で使うとき](#-linux-で使うとき)」）。
+
 **⚠ 「UIAPduino への接続が失われました」と出たら、× で閉じてください。**
 ケーブルを抜いたときに出るもので、焼き終わって繋がり直しても消えずに残ります。
 
 書き込みブロックの詳しい話は「[スケッチの書き込みについて](#スケッチの書き込みについて)」にあります。
+
+---
+
+## 🐧 Linux で使うとき
+
+**Linux では udev ルールの追加が要ります。** 無いとブラウザがデバイスを開けず、
+デバイス選択のダイアログに基板が出てこなかったり、選んでも繋がらなかったりします。
+Windows と macOS では要りません。
+
+```bash
+sudo nano /etc/udev/rules.d/99-minichlink-uiap-hid.rules
+```
+
+エディタで次の 4 行（コメントを除く）を書きます。
+
+```
+# tarosay/scratch3-uiapduino
+# 通常のスケッチ
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="d004", GROUP="plugdev", MODE="0660"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="d004", GROUP="plugdev", MODE="0660"
+# 書き込みモード (rv003usb ブートローダ)
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="b803", GROUP="plugdev", MODE="0660"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="b803", GROUP="plugdev", MODE="0660"
+```
+
+書けたら読み込ませます。
+
+```bash
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+**リロードのあとブラウザを更新してください。** 既に開いているページには効きません。
+
+**⚠ VID:PID は 2 組あります。** 基板は通常のスケッチで動いているとき `1209:d004` を
+名乗り、書き込みモードに入ると `d004` は消えて `1209:b803`（rv003usb ブートローダ）が
+現れます。**別のデバイスです。** `d004` だけを書くと、ブロックは動くのに
+「スケッチを書き込む」だけが失敗します。
+
+**⚠ `plugdev` グループに入っている必要があります。** Ubuntu などでは普通そうなって
+いますが、`id -nG | grep plugdev` で何も出なければ、
+`sudo usermod -aG plugdev $USER` を実行して一度ログインし直してください。
+
+公式ドキュメントの
+[udev ファイルの追加方法](https://www.uiap.jp/uiapduino/pro-micro/ch32v003/v1dot4#linux)
+とは**別のファイル名にしてあります。** 共通のファイルに追記していくと煩雑になるためです。
+
+動作を確認した環境（[Issue #1](https://github.com/tarosay/scratch3-uiapduino/issues/1)、
+YuukiUmeta-UIAP さんの報告）:
+
+```
+Ubuntu 24.04 (Linux 7.0.0-28-generic)
+Google Chrome 151.0.7922.137 (x86_64)
+```
 
 ---
 

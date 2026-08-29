@@ -103,6 +103,10 @@ Windows ではリンクにジャンクションを使うので、開発者モー
 （本当の理由 `WebHID is not available in this environment` は console にしか出ない）。
 2026-08-07 に実際に踏んだ。
 
+**Linux では udev ルールの追加が要る。** 無いとブラウザがデバイスを開けない。
+`d004`（通常）と `b803`（書き込みモード）の 2 組が要る。手順は
+[`../README.md` の「Linux で使うとき」](../README.md#-linux-で使うとき)。
+
 手元で配るには live-server を CORS 付きで立てる。
 
 ```powershell
