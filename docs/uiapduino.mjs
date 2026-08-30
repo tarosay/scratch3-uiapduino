@@ -5643,6 +5643,58 @@ var NEOPIXEL_DEFAULT = {
   brightness: 50
 };
 
+/**
+ * テープの色の並びごとの、送るバイトの取り出し順。
+ *
+ * 添字は鏡のバッファ (_neoBuf) の中での位置で、0 = R、1 = G、2 = B。
+ * 並べ替えは送信直前の _neoFlush() だけで行う。バッファは論理 RGB のまま持つ
+ * ので、n 番の色・虹・HSV・ずらす・暗くする はどれも影響を受けない。
+ *
+ * 導き方はこう。NeoPixelmin は渡した (r, g, b) を線へ g, r, b の順で出す。
+ * テープの並びが XYZ なら、テープは線の 1 バイト目を X として読む。
+ * たとえば GBR のテープは 1 バイト目 (= 渡した g) を G、2 バイト目 (= 渡した r)
+ * を B、3 バイト目を R として読むので、渡す値は (B, G, R) になる。
+ *
+ * デバイス側は触らない。ライブラリに NEO_BGR を渡す手もあるが、それだと
+ * NEO_BEGIN の引数が増えて全員に焼き直しをお願いすることになる。
+ * @type {object}
+ */
+var NEOPIXEL_ORDER = {
+  GRB: [0, 1, 2],
+  GBR: [2, 1, 0],
+  RGB: [1, 0, 2],
+  BRG: [0, 2, 1],
+  BGR: [1, 2, 0],
+  RBG: [2, 0, 1]
+};
+
+/**
+ * 色の並びの既定。今までの挙動と同じなので、保存済みの作品は無傷。
+ * @type {string}
+ */
+var NEOPIXEL_ORDER_DEFAULT = 'GRB';
+
+/**
+ * 「赤が何に見えるか」「緑が何に見えるか」から、テープの並びを決める表。
+ *
+ * 利用者に並びを言い当てさせない。見えた色を 2 つ答えてもらうだけにする。
+ * 1 つでは足りない (赤だけだと 6 通りが 3 組に分かれるだけ)。2 つで一意に決まる。
+ *
+ * 答えは「並べ替える前 (= ふつう) の見え方」を指す。困っている人はまずその状態で
+ * 見ているので、これでよい。同じ答えをもう一度実行しても結果は変わらない。
+ *
+ * 左は [赤を出したときに見える色, 緑を出したときに見える色]。
+ * @type {object}
+ */
+var NEOPIXEL_SEEN = {
+  'R,G': 'GRB',
+  'B,G': 'GBR',
+  'G,R': 'RGB',
+  'R,B': 'BRG',
+  'G,B': 'BGR',
+  'B,R': 'RBG'
+};
+
 // スケッチの入手先 (SKETCH_RELEASE_URL) は v0.2.4 で消した。
 //
 // 焼くものは拡張機能が持っており、直し方は「下のブロックを押す」だけになった。
@@ -6094,6 +6146,26 @@ var message = {
   //
   // 番号は 1 から数える。Scratch のリストと同じにしてある。
   // デバイス側は 0 から数えるが、その変換はブロックの実装が持つ。
+  neoSeen: {
+    ja: 'NeoPixel は 赤が [SEEN_R] 緑が [SEEN_G] に見える',
+    'ja-Hira': 'NeoPixel は あかが [SEEN_R] みどりが [SEEN_G] に みえる',
+    en: 'NeoPixel shows red as [SEEN_R] and green as [SEEN_G]'
+  },
+  seenRed: {
+    ja: '赤',
+    'ja-Hira': 'あか',
+    en: 'red'
+  },
+  seenGreen: {
+    ja: '緑',
+    'ja-Hira': 'みどり',
+    en: 'green'
+  },
+  seenBlue: {
+    ja: '青',
+    'ja-Hira': 'あお',
+    en: 'blue'
+  },
   neoBegin: {
     ja: 'NeoPixel を [COUNT] 個 明るさ [BRIGHTNESS] % で始める',
     'ja-Hira': 'NeoPixel を [COUNT] こ あかるさ [BRIGHTNESS] % で はじめる',
@@ -6350,6 +6422,18 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
      * @type {boolean}
      */
     this._neoOpen = false;
+
+    /**
+     * テープの色の並び。NEOPIXEL_ORDER のキー。
+     *
+     * 送信直前の並べ替えにしか使わない。_neoBuf は常に論理 RGB のまま。
+     *
+     * ⚠ neoBegin では戻さない。「色の並びを [ ] にする」は
+     *   「始める」の上に置くブロックなので、始めるたびに既定へ戻すと
+     *   置いた順のとおりに効かなくなる。
+     * @type {string}
+     */
+    this._neoOrder = NEOPIXEL_ORDER_DEFAULT;
 
     /**
      * 前回の送信以降に書き換えられた範囲 (両端を含む)。空なら from > to。
@@ -6929,6 +7013,35 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
         //   置いただけで光らないと、利用者はどこが悪いのか分からない。
         //   速さが要るところだけ「まとめて表示する〔 〕」で囲む。
         {
+          // テープの製品ごとに 1 画素 3 バイトの並びが違う。合わないと
+          // 色が入れかわる。
+          //
+          // ⚠ 並びの名前 (GRB / GBR ...) は出さない。あれはライブラリの
+          //   定数名で、商品にも箱にも書いていない。子どもには手がかりに
+          //   ならない。症状を文で読ませるのも駄目で、「赤→緑→青にずれる」
+          //   のような書き方は光る色の一覧に読めてしまう (実際に読み違えた)。
+          //
+          //   だから並びを言い当てさせない。見えた色を 2 つ答えてもらう。
+          //   1 つでは足りず (6 通りが 3 組に分かれるだけ)、2 つで一意に決まる。
+          //
+          // ⚠ _neoReady() で弾かない。「始める」の上に置くのが自然な
+          //   位置なので、始める前に置けないと順番が不自然になる。
+          opcode: 'neoSeen',
+          text: this._getText('neoSeen'),
+          blockType: BlockType.COMMAND,
+          arguments: {
+            SEEN_R: {
+              type: ArgumentType.STRING,
+              menu: 'NEO_SEEN',
+              defaultValue: 'R'
+            },
+            SEEN_G: {
+              type: ArgumentType.STRING,
+              menu: 'NEO_SEEN',
+              defaultValue: 'G'
+            }
+          }
+        }, {
           opcode: 'neoBegin',
           text: this._getText('neoBegin'),
           blockType: BlockType.COMMAND,
@@ -7359,6 +7472,20 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
           TERMINATOR_FIELD: {
             acceptReporters: false,
             items: 'getTerminatorItems'
+          },
+          // 「見えた色」。赤・緑・青の 3 つだけ。
+          NEO_SEEN: {
+            acceptReporters: true,
+            items: [{
+              text: this._getText('seenRed'),
+              value: 'R'
+            }, {
+              text: this._getText('seenGreen'),
+              value: 'G'
+            }, {
+              text: this._getText('seenBlue'),
+              value: 'B'
+            }]
           },
           // 作品にあるリストの一覧。作るたびに変わるので関数で作る。
           LIST: {
@@ -9335,13 +9462,17 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
       var to = Math.min(this._neoDirtyTo, this._neoCount - 1);
       this._neoDirtyFrom = 0;
       this._neoDirtyTo = -1;
+
+      // テープの並びに合わせるのはここだけ。バッファは論理 RGB のまま残る。
+      var order = NEOPIXEL_ORDER[this._neoOrder] || NEOPIXEL_ORDER[NEOPIXEL_ORDER_DEFAULT];
       var chain = Promise.resolve();
       var _loop3 = function _loop3() {
         var n = Math.min(NEOPIXEL_SET_CHUNK, to - i + 1);
         // [開始番号, 個数, R, G, B, R, G, B, ...]
         var params = [i, n];
-        for (var k = 0; k < n * 3; k++) {
-          params.push(_this16._neoBuf[i * 3 + k]);
+        for (var k = 0; k < n; k++) {
+          var at = (i + k) * 3;
+          params.push(_this16._neoBuf[at + order[0]], _this16._neoBuf[at + order[1]], _this16._neoBuf[at + order[2]]);
         }
         chain = chain.then(function () {
           return _this16.processor.request(CMD.NEO_SET, params);
@@ -9435,6 +9566,24 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
     key: "_neoByte",
     value: function _neoByte(value) {
       return Math.min(255, Math.max(0, Math.round(Cast.toNumber(value))));
+    }
+  }, {
+    key: "neoSeen",
+    value: function neoSeen(args) {
+      var seen = "".concat(Cast.toString(args.SEEN_R).toUpperCase(), ",") + "".concat(Cast.toString(args.SEEN_G).toUpperCase());
+      var order = NEOPIXEL_SEEN[seen];
+      if (!order) {
+        // 赤と緑が同じ色に見えることはない。指定の取り違えなので何もしない。
+        console.warn("[uiapduino] NeoPixel cannot show red as " + "".concat(Cast.toString(args.SEEN_R), " and green as ").concat(Cast.toString(args.SEEN_G), " ") + 'at the same time; pick two different colors. ' + '赤と緑には別々の色を選んでください。');
+        return Promise.resolve();
+      }
+      if (order === this._neoOrder) return Promise.resolve();
+      this._neoOrder = order;
+
+      // 途中で変えても次の表示で直るように、光っているぶんを送り直す。
+      // 送る値だけが変わるので、鏡のバッファには手を触れない。
+      if (this._neoCount > 0) this._neoTouch(0, this._neoCount - 1);
+      return Promise.resolve();
     }
   }, {
     key: "neoBegin",
