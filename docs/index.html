@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xcratch + UIAPduino — UIAPduino をブロックで動かす</title>
+<meta name="description" content="UIAPduino（CH32V003）をブロックで動かす拡張機能です。インストール不要、Chrome か Edge で Xcratch を開くだけ。LED・サーボ・距離計・NeoPixel・キーボード・マウスのブロックがあります。基板への書き込みもブロックからできるので、Arduino IDE は要りません。">
+<meta name="keywords" content="UIAPduino, Xcratch, ブロックプログラミング, CH32V003, WebHID, CoderDojo, 電子工作">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:site_name" content="Xcratch + UIAPduino">
+<meta property="og:title" content="Xcratch + UIAPduino — UIAPduino をブロックで動かす">
+<meta property="og:description" content="UIAPduino をブロックで動かす拡張機能です。インストール不要、Chrome か Edge で Xcratch を開くだけ。Arduino IDE は要りません。">
+<meta property="og:url" content="https://tarosay.github.io/scratch3-uiapduino/">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://tarosay.github.io/scratch3-uiapduino/">
+
+<style>
+  /* 色は実物から。紫 = Xcratch のメニューバー、緑 = UIAPduino 拡張のブロック */
+  :root {
+    --xcratch: #855cd6;
+    --block:   #0fbd8c;
+    --block-dk:#0b8e69;
+    --ink:     #23384d;
+    --ink-soft:#5b7288;
+    --paper:   #ffffff;
+    --ground:  #f3f6fb;
+    --line:    #dbe4ef;
+    --warn-bg: #fff8e6;
+    --warn-line:#e8c66a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: var(--ground);
+    color: var(--ink);
+    line-height: 1.75;
+  }
+  a { color: var(--xcratch); }
+
+  header {
+    background: linear-gradient(135deg, #7a4fd0 0%, #855cd6 55%, #9b78e0 100%);
+    color: #fff;
+    padding: 44px 24px 38px;
+  }
+  .inner { max-width: 820px; margin: 0 auto; }
+  header h1 { font-size: 2rem; line-height: 1.3; margin-bottom: 10px; }
+  header .lead { font-size: 1rem; opacity: 0.95; max-width: 640px; }
+  .badge {
+    display: inline-block; font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 0.06em; padding: 3px 12px; border-radius: 999px;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.4);
+    margin-bottom: 14px;
+  }
+
+  .cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-top: 22px; padding: 13px 26px;
+    background: var(--block); color: #04352a;
+    border: 2px solid #eafff7; border-radius: 999px;
+    font-size: 1.02rem; font-weight: 800; text-decoration: none;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.28);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 5px 0 rgba(0,0,0,0.28); }
+  .cta-note { font-size: 0.82rem; opacity: 0.9; margin-top: 10px; }
+
+  main { max-width: 820px; margin: 0 auto; padding: 36px 24px 10px; }
+  section { margin-bottom: 34px; }
+  h2 {
+    font-size: 1.22rem; color: var(--xcratch);
+    padding-bottom: 7px; margin-bottom: 14px;
+    border-bottom: 2px solid var(--line);
+  }
+  h3 { font-size: 1rem; margin: 18px 0 6px; }
+  p { margin-bottom: 12px; }
+  ul, ol { margin: 0 0 12px 1.4em; }
+  li { margin-bottom: 5px; }
+
+  .card {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 14px;
+  }
+  /* URB Block Lab のタイル。色はあちらのパレットから
+     （--mikan #ff7a3d / --mikan-dk #e8621f。もとは「和歌山有田＝みかん」） */
+  .card.urb { border-left: 4px solid #ff7a3d; }
+  .card.urb h3 { color: #e8621f; }
+  .card.urb a  { color: #e8621f; }
+  .steps { counter-reset: step; list-style: none; margin-left: 0; }
+  .steps > li {
+    position: relative; padding-left: 42px; margin-bottom: 16px;
+  }
+  .steps > li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 2px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--block); color: #fff;
+    font-weight: 800; font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  code, .url-text {
+    font-family: 'Consolas', 'Cascadia Code', monospace;
+    font-size: 0.88rem;
+    background: #eef2f8; border-radius: 4px; padding: 2px 6px;
+  }
+  .url {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 11px; margin: 10px 0;
+    border: 1px solid var(--line); border-radius: 6px;
+    background: #f7f9fc;
+  }
+  .url-text {
+    flex: 1; min-width: 0;
+    word-break: break-all; background: none; padding: 0;
+  }
+  .url-copy {
+    flex: none; cursor: pointer;
+    font-family: inherit; font-size: 0.8rem; font-weight: 700;
+    padding: 7px 15px; border-radius: 6px;
+    border: 1px solid var(--block-dk); background: var(--block); color: #fff;
+    transition: filter 0.15s;
+  }
+  .url-copy:hover { filter: brightness(1.08); }
+  .url-copy:disabled { cursor: default; filter: none; opacity: 0.85; }
+
+  .blocks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .block-tag {
+    background: var(--block); color: #fff;
+    font-size: 0.82rem; font-weight: 700;
+    padding: 5px 13px; border-radius: 999px;
+  }
+
+  .warn {
+    background: var(--warn-bg); border: 1px solid var(--warn-line);
+    border-radius: 8px; padding: 12px 16px; margin-bottom: 12px;
+    font-size: 0.9rem;
+  }
+
+  footer {
+    background: #23384d; color: #c9d6e4;
+    padding: 26px 24px; margin-top: 30px; font-size: 0.86rem;
+  }
+  footer a { color: #b39ddb; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  footer li { margin-bottom: 4px; }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.5rem; }
+    header { padding: 32px 16px 30px; }
+    main { padding: 28px 16px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <div class="badge">Chrome / Edge · インストール不要</div>
+    <h1>Xcratch + UIAPduino<br>UIAPduino をブロックで動かす</h1>
+    <p class="lead">
+      290 円のマイコンボード <strong>UIAPduino</strong>（CH32V003）を、
+      ブロックをならべるだけで動かせます。
+      Xcratch という Scratch 3.0 互換のエディタに読み込ませて使う拡張機能です。
+      <strong>Arduino IDE は要りません。</strong>
+    </p>
+    <a class="cta" href="https://xcratch.github.io/editor/?extension=https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs">
+      Xcratch で開く →
+    </a>
+    <div class="cta-note">押すと拡張機能を読み込んだ状態で Xcratch が開きます。</div>
+  </div>
+</header>
+
+<main>
+
+  <section>
+    <h2>できること</h2>
+    <p>ブロックはすべて実機で確認済みです。</p>
+    <div class="blocks">
+      <span class="block-tag">LED・ピンの出力</span>
+      <span class="block-tag">スイッチの入力</span>
+      <span class="block-tag">アナログ値 A0〜A3</span>
+      <span class="block-tag">PWM</span>
+      <span class="block-tag">サーボ</span>
+      <span class="block-tag">距離計 HC-SR04</span>
+      <span class="block-tag">NeoPixel WS2812B</span>
+      <span class="block-tag">シリアル通信</span>
+      <span class="block-tag">キーボード</span>
+      <span class="block-tag">マウス</span>
+      <span class="block-tag">スケッチの書き込み</span>
+    </div>
+    <p>
+      キーボードとマウスのブロックは、UIAPduino が USB キーボード・USB マウスとして
+      パソコンを操作するものです。Scratch のステージの中だけでなく、
+      メモ帳や他のアプリが実際に動きます。
+    </p>
+    <p>
+      アナログ値の <code>A0 の値</code>〜<code>A3 の値</code> はチェックを入れると
+      ステージに 4 つ並び、緑の旗を押していなくても更新されます。
+    </p>
+  </section>
+
+  <section>
+    <h2>使い方</h2>
+    <ol class="steps">
+      <li>
+        <strong>Chrome か Edge で Xcratch を開きます。</strong>
+        上の「Xcratch で開く」を押すと、拡張機能を読み込んだ状態で開きます。
+        自分で読み込むときは、Xcratch の「拡張機能を追加 → Extension Loader」に
+        次の URL を入れます。
+        <span class="url">
+          <span class="url-text">https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs</span>
+          <button type="button" class="url-copy" onclick="copyUrl(this)">コピー</button>
+        </span>
+      </li>
+      <li>
+        <strong>基板を書き込みモードにします。</strong>
+        基板のボタンを押しながら USB ケーブルを挿し、すぐにボタンを離します。
+      </li>
+      <li>
+        <strong>パレットの末尾にある
+        <code>スケッチ (プロトコル 8) を書き込む</code> をクリックします。</strong>
+        デバイス選択のダイアログに <code>32V003</code> が出るので、それを選びます。
+        進み具合は <code>書き込みの ようす</code> に出ます。
+        焼き終わると基板は自動で繋ぎ直ります。
+      </li>
+      <li>
+        <strong>あとはブロックをならべるだけです。</strong>
+      </li>
+    </ol>
+
+    <div class="warn">
+      <strong>⚠ ブロックは直接クリックしてください。</strong>
+      緑の旗では書き込めません。
+    </div>
+    <div class="warn">
+      <strong>⚠「UIAPduino への接続が失われました」と出たら、× で閉じてください。</strong>
+      ケーブルを抜いたときに出るもので、焼き終わって繋がり直しても残ります。
+    </div>
+    <p>
+      書き込まれるのは拡張機能に同梱してあるスケッチなので、
+      拡張機能とスケッチの版が食い違うことはありません。
+      プロトコルが合わないと言われたときも、その画面から焼き直せます。
+    </p>
+  </section>
+
+  <section>
+    <h2>必要なもの</h2>
+    <ul>
+      <li><strong>UIAPduino Pro Micro CH32V003</strong> と USB ケーブル</li>
+      <li><strong>Chrome か Edge</strong>。WebHID API を使うので Firefox と Safari では動きません</li>
+    </ul>
+    <p>それ以外に必要なものはありません。インストールもアカウントも不要です。</p>
+  </section>
+
+  <section>
+    <h2>Linux で使うとき</h2>
+    <p>
+      <strong>Linux では udev ルールの追加が要ります。</strong>
+      無いとブラウザが基板を開けず、デバイス選択のダイアログに出てこなかったり、
+      選んでも繋がらなかったりします。Windows と macOS では要りません。
+    </p>
+    <p>
+      <code>/etc/udev/rules.d/99-minichlink-uiap-hid.rules</code> を作って、
+      <a href="https://github.com/tarosay/scratch3-uiapduino#-linux-で使うとき">README の手順</a>
+      のとおりに 4 行を書き、読み込ませてからブラウザを更新してください。
+    </p>
+    <div class="warn">
+      <strong>⚠ VID:PID は 2 組あります。</strong>
+      通常のスケッチで動いているときは <code>1209:d004</code>、
+      書き込みモードでは <code>1209:b803</code> です。
+      <code>d004</code> だけを書くと、ブロックは動くのに書き込みだけが失敗します。
+    </div>
+  </section>
+
+  <section>
+    <h2>デスクトップ版もあります</h2>
+    <p>
+      Scratch Desktop に組み込んだ版もあります。ブロックの実装は Xcratch 版と同じものを
+      共有しています。Xcratch で保存した <code>.sb3</code> をデスクトップ版で開けることも
+      確認済みです。作り方は
+      <a href="https://github.com/tarosay/scratch3-uiapduino">GitHub リポジトリ</a>
+      にあります。
+    </p>
+  </section>
+
+  <section>
+    <h2>UIAPduino をブロックで動かす方法は、もう一つあります</h2>
+    <div class="card urb">
+      <h3>URB Block Lab — ブロックをつなぐと Ruby になります</h3>
+      <p>
+        ブロックで組んだものが Ruby のコードになり、基板の中で動きます。
+        こちらは Xcratch ではなく専用のページで、動かすには
+        EEPROM（CAT24M01WI）も必要です。
+      </p>
+      <p>
+        <a href="https://tarosay.github.io/uiap-hid-web/uiapruby-block.html">URB Block Lab を開く</a>
+      </p>
+    </div>
+    <p>
+      UIAPduino をブラウザから動かすページは
+      <a href="https://tarosay.github.io/uiap-hid-web/">UIAPduino WebHID Lab</a>
+      にまとまっています。Arduino IDE のセットアップ手順もそちらにあります。
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="inner">
+    <ul style="list-style:none;margin:0;">
+      <li><a href="https://github.com/tarosay/scratch3-uiapduino">GitHub — tarosay/scratch3-uiapduino</a></li>
+      <li><a href="https://tarosay.github.io/uiap-hid-web/">UIAPduino WebHID Lab</a></li>
+      <li><a href="https://xcratch.github.io/">Xcratch</a></li>
+      <li><a href="https://www.uiap.jp/uiapduino/pro-micro/ch32v003/v1dot4">UIAPduino Pro Micro CH32V003（UIAP）</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  function copyUrl(btn) {
+    var text = btn.parentElement.querySelector('.url-text').textContent.trim();
+    var done = function () {
+      btn.textContent = 'コピーしました';
+      btn.disabled = true;
+      setTimeout(function () {
+        btn.textContent = 'コピー';
+        btn.disabled = false;
+      }, 1600);
+    };
+    // clipboard API は HTTPS か localhost でしか使えないので、古い方法も残す
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { /* 何もしない */ }
+      document.body.removeChild(ta);
+    }
+  }
+</script>
+
+</body>
+</html>
