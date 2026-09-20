@@ -3,15 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Xcratch + UIAPduino — UIAPduino をブロックで動かす</title>
-<meta name="description" content="UIAPduino（CH32V003）をブロックで動かす拡張機能です。インストール不要、Chrome か Edge で Xcratch を開くだけ。LED・サーボ・距離計・NeoPixel・キーボード・マウスのブロックがあります。基板への書き込みもブロックからできるので、Arduino IDE は要りません。">
-<meta name="keywords" content="UIAPduino, Xcratch, ブロックプログラミング, CH32V003, WebHID, CoderDojo, 電子工作">
+<title>UIAPduino をブロックで動かす — Xcratch + UIAPduino / Scratch Desktop 版</title>
+<meta name="description" content="UIAPduino（CH32V003）をブロックで動かす拡張機能です。インストール不要の Xcratch 版と、インストーラで入れる Scratch Desktop 版があり、ブロックは共通です。LED・サーボ・距離計・NeoPixel・キーボード・マウスのブロックがあり、基板への書き込みもブロックからできるので Arduino IDE は要りません。">
 
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ja_JP">
-<meta property="og:site_name" content="Xcratch + UIAPduino">
-<meta property="og:title" content="Xcratch + UIAPduino — UIAPduino をブロックで動かす">
-<meta property="og:description" content="UIAPduino をブロックで動かす拡張機能です。インストール不要、Chrome か Edge で Xcratch を開くだけ。Arduino IDE は要りません。">
+<meta property="og:site_name" content="scratch3-uiapduino">
+<meta property="og:title" content="UIAPduino をブロックで動かす — Xcratch + UIAPduino / Scratch Desktop 版">
+<meta property="og:description" content="UIAPduino をブロックで動かす拡張機能です。インストール不要の Xcratch 版と、インストーラで入れる Scratch Desktop 版があります。Arduino IDE は要りません。">
 <meta property="og:url" content="https://tarosay.github.io/scratch3-uiapduino/">
 <meta name="twitter:card" content="summary">
 <link rel="canonical" href="https://tarosay.github.io/scratch3-uiapduino/">
@@ -84,6 +83,14 @@
   }
   /* URB Block Lab のタイル。色はあちらのパレットから
      （--mikan #ff7a3d / --mikan-dk #e8621f。もとは「和歌山有田＝みかん」） */
+  .ways { display: flex; gap: 14px; flex-wrap: wrap; }
+  .ways .way { flex: 1 1 280px; min-width: 0; margin-bottom: 0; }
+  .ways .way h3 { margin-top: 0; color: var(--xcratch); }
+  .way-note {
+    font-size: 0.82rem; color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
   .card.urb { border-left: 4px solid #ff7a3d; }
   .card.urb h3 { color: #e8621f; }
   .card.urb a  { color: #e8621f; }
@@ -157,25 +164,54 @@
 
 <header>
   <div class="inner">
-    <div class="badge">Chrome / Edge · インストール不要</div>
-    <h1>Xcratch + UIAPduino<br>UIAPduino をブロックで動かす</h1>
+    <div class="badge">UIAPduino 拡張機能</div>
+    <h1>UIAPduino をブロックで動かす</h1>
     <p class="lead">
       290 円のマイコンボード <strong>UIAPduino</strong>（CH32V003）を、
       ブロックをならべるだけで動かせます。
-      Xcratch という Scratch 3.0 互換のエディタに読み込ませて使う拡張機能です。
-      <strong>Arduino IDE は要りません。</strong>
+      <strong>使い方は 2 つあり、ブロックの実装は同じものを共有しています。</strong>
+      どちらも <strong>Arduino IDE は要りません。</strong>
     </p>
     <a class="cta" href="https://xcratch.github.io/editor/?extension=https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs">
       Xcratch で開く →
     </a>
-    <div class="cta-note">押すと拡張機能を読み込んだ状態で Xcratch が開きます。</div>
+    <div class="cta-note">
+      インストール不要。押すと拡張機能を読み込んだ状態で Xcratch が開きます（Chrome / Edge）。
+    </div>
   </div>
 </header>
 
 <main>
 
   <section>
+    <h2>2 つの使い方</h2>
+    <div class="ways">
+      <div class="card way">
+        <h3>Xcratch + UIAPduino</h3>
+        <p class="way-note">インストール不要 / Chrome・Edge</p>
+        <p>
+          Xcratch のエディタに拡張機能の URL を読み込ませて使います。
+          入れるものは何もありません。
+        </p>
+        <p><a href="#how">使い方を見る</a></p>
+      </div>
+      <div class="card way">
+        <h3>Scratch UIAPduino（デスクトップ版）</h3>
+        <p class="way-note">インストーラ / Windows</p>
+        <p>
+          Scratch Desktop に組み込んだ版です。インストーラか、
+          展開するだけの ZIP を
+          <a href="https://github.com/tarosay/scratch3-uiapduino/releases">Releases</a>
+          から入れます。
+        </p>
+        <p><a href="#desktop">くわしく見る</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <h2>できること</h2>
+    <p class="way-note">ブロックは Xcratch 版とデスクトップ版で共通です。</p>
     <p>ブロックはすべて実機で確認済みです。</p>
     <div class="blocks">
       <span class="block-tag">LED・ピンの出力</span>
@@ -201,8 +237,8 @@
     </p>
   </section>
 
-  <section>
-    <h2>使い方</h2>
+  <section id="how">
+    <h2>使い方（Xcratch 版）</h2>
     <ol class="steps">
       <li>
         <strong>Chrome か Edge で Xcratch を開きます。</strong>
@@ -274,12 +310,27 @@
     </div>
   </section>
 
-  <section>
-    <h2>デスクトップ版もあります</h2>
+  <section id="desktop">
+    <h2>Scratch UIAPduino（デスクトップ版）</h2>
     <p>
-      Scratch Desktop に組み込んだ版もあります。ブロックの実装は Xcratch 版と同じものを
-      共有しています。Xcratch で保存した <code>.sb3</code> をデスクトップ版で開けることも
-      確認済みです。作り方は
+      Scratch Desktop に組み込んだ版です。ブロックは Xcratch 版と同じものを共有していて、
+      できることは変わりません。ブラウザを使わないので、WebHID の対応ブラウザが要らない
+      という違いがあります。
+    </p>
+    <p>
+      <a href="https://github.com/tarosay/scratch3-uiapduino/releases">Releases</a>
+      から入れられます。インストーラ（<code>Scratch-UIAPduino-…-Setup.exe</code>）と、
+      展開するだけで動く ZIP（<code>…-portable.zip</code>）の 2 つがあります。
+    </p>
+    <p>
+      <strong>公式の Scratch Desktop を入れていても上書きされません。</strong>
+      アプリ名を <code>Scratch UIAPduino</code>、<code>appId</code> を
+      <code>jp.uiap.scratch-uiapduino</code> に分けてあり、
+      設定の保存先も <code>%APPDATA%\Scratch UIAPduino</code> に分けてあります。
+    </p>
+    <p>
+      Xcratch 版で保存した <code>.sb3</code> をデスクトップ版で開けることも確認済みです。
+      ビルド方法は
       <a href="https://github.com/tarosay/scratch3-uiapduino">GitHub リポジトリ</a>
       にあります。
     </p>
