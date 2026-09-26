@@ -82,7 +82,12 @@ export const MENU_ICON_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAA
  * 「サーボ [ ] を [ ] 度にする」のピンのメニュー。
  *
  * PWM を出せる 8 本を並べる。表記の決め方は variant.js と同じで、
- * 基板のシルクで選ばせ、デバイスへは Arduino 番号を送る (A1 / A2 / A3 = D0 / D6 / D12)。
+ * 基板のシルクで選ばせ、デバイスへは Arduino 番号を送る
+ * (A1 / A2 / A3 = D0 / D6 / D12、TX / RX = D15 / D16)。
+ *
+ * D15 / D16 のシルクは TX / RX。tarosay さんが示したピン配置図
+ * (Yuuki U. 作、2026-06-16 版) で確かめた。A5 / A6 はアナログの番号で、
+ * 基板には書かれていない。
  *
  * D3 には基板上に 2.2kΩ のプルアップがある。PWM を出している間は効かないが、
  * 止めて入力に戻すと High 側へ引かれ、LED を繋いでいるとうっすら光ることがある。
@@ -96,8 +101,8 @@ export const PWM_PIN_ITEMS = [
     {text: '3', value: '3'},
     {text: '5', value: '5'},
     {text: '9', value: '9'},
-    {text: '15', value: '15'},
-    {text: '16', value: '16'},
+    {text: 'TX', value: '15'},
+    {text: 'RX', value: '16'},
     {text: 'A1', value: '0'},
     {text: 'A2', value: '6'},
     {text: 'A3', value: '12'}
