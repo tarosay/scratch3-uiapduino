@@ -53,16 +53,21 @@
     margin-bottom: 14px;
   }
 
+  /* 「Xcratch で開く」は版ごとに 1 つずつ並べる。色はそれぞれのブロックの色 */
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
   .cta {
-    display: inline-flex; align-items: center; gap: 10px;
-    margin-top: 22px; padding: 13px 26px;
+    display: inline-flex; flex-direction: column; align-items: flex-start;
+    padding: 10px 26px 11px; min-width: 270px;
     background: var(--block); color: #04352a;
     border: 2px solid #eafff7; border-radius: 999px;
     font-size: 1.02rem; font-weight: 800; text-decoration: none;
+    line-height: 1.35;
     box-shadow: 0 3px 0 rgba(0,0,0,0.28);
     transition: transform 0.15s, box-shadow 0.15s;
   }
   .cta:hover { transform: translateY(-2px); box-shadow: 0 5px 0 rgba(0,0,0,0.28); }
+  .cta-sub { font-size: 0.78rem; font-weight: 700; opacity: 0.85; }
+  .cta-remap3 { background: #3f51b5; color: #fff; border-color: #e3e7ff; }
   .cta-note { font-size: 0.82rem; opacity: 0.9; margin-top: 10px; }
 
   main { max-width: 820px; margin: 0 auto; padding: 36px 24px 10px; }
@@ -172,9 +177,16 @@
       <strong>使い方は 2 つあり、ブロックの実装は同じものを共有しています。</strong>
       どちらも <strong>Arduino IDE は要りません。</strong>
     </p>
-    <a class="cta" href="https://xcratch.github.io/editor/?extension=https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs">
-      Xcratch で開く →
-    </a>
+    <div class="cta-row">
+      <a class="cta" href="https://xcratch.github.io/editor/?extension=https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs">
+        <span>Xcratch で開く →</span>
+        <span class="cta-sub">UIAPduino（PWM 5 本）</span>
+      </a>
+      <a class="cta cta-remap3" href="https://xcratch.github.io/editor/?extension=https://tarosay.github.io/scratch3-uiapduino/uiapduino-remap3.mjs">
+        <span>Xcratch で開く →</span>
+        <span class="cta-sub">UIAPduino Remap3（PWM 8 本）</span>
+      </a>
+    </div>
     <div class="cta-note">
       インストール不要。押すと拡張機能を読み込んだ状態で Xcratch が開きます（Chrome / Edge）。
     </div>
@@ -235,6 +247,14 @@
       アナログ値の <code>A0 の値</code>〜<code>A3 の値</code> はチェックを入れると
       ステージに 4 つ並び、緑の旗を押していなくても更新されます。
     </p>
+    <p>
+      <strong>PWM を 8 本使える「UIAPduino Remap3」もあります。</strong>
+      ブロックはそのままで、PWM を出せるピンが 5 本（2 / 5 / A1 / A2 / A3）から
+      8 本（3 / 5 / 9 / TX / RX / A1 / A2 / A3）に増えます。
+      サーボをたくさん動かしたり、LED の明るさを何か所も変えたりできます。
+      基板の LED（2 番）は、Remap3 では点灯と消灯だけになります。
+      今のところ Xcratch 版だけです。読み込み方は<a href="#how">使い方</a>にあります。
+    </p>
   </section>
 
   <section id="how">
@@ -247,6 +267,12 @@
         次の URL を入れます。
         <span class="url">
           <span class="url-text">https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs</span>
+          <button type="button" class="url-copy" onclick="copyUrl(this)">コピー</button>
+        </span>
+        PWM を 8 本使う「UIAPduino Remap3」は、こちらの URL です
+        （<a href="https://xcratch.github.io/editor/?extension=https://tarosay.github.io/scratch3-uiapduino/uiapduino-remap3.mjs">Remap3 を Xcratch で開く</a>）。
+        <span class="url">
+          <span class="url-text">https://tarosay.github.io/scratch3-uiapduino/uiapduino-remap3.mjs</span>
           <button type="button" class="url-copy" onclick="copyUrl(this)">コピー</button>
         </span>
       </li>
