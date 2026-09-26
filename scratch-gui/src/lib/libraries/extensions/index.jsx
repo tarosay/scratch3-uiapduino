@@ -55,6 +55,40 @@ import uiapduinoConnectionBadgeIconURL from './uiapduino/usb-hid-white.svg';
 import uiapduinoRemap3IconURL from './uiapduino/uiapduino-remap3.png';
 import uiapduinoRemap3InsetIconURL from './uiapduino/uiapduino-remap3-small.png';
 
+// UIAPduino 拡張機能のバージョン。カードの説明の後ろに「 (v0.3.0)」の形で付ける。
+// Xcratch 版のカードと同じ出し方にするため (xcratch/src/gui/.../entry/createEntry.js)。
+//
+// 番号は xcratch/package.json の version を読む。README の決まりで、これが
+// リポジトリのタグと同じ値になっている。ここに別の番号を書くと、上げ忘れて
+// Xcratch 版とデスクトップ版で番号がずれる。
+//
+// ビルドツリーではリポジトリの中身を丸ごと重ねるので、一番上に xcratch/ がある
+// (build-scratch3-uiapduino.ps1)。
+//
+// ⚠ 相対パスは scratch-desktop/node_modules/scratch-gui (ジャンクション) から数える。
+//   webpack はジャンクションを実体のパスに直さず、node_modules の中のパスのまま
+//   解決する。scratch-gui の実体 (ビルドツリー直下) から数えた 5 階層では
+//   scratch-desktop/node_modules/xcratch を探しに行って失敗した (2026-09-27)。
+//
+//   extensions → libraries → lib → src → scratch-gui → node_modules → scratch-desktop
+//   → ビルドツリーの一番上、の 7 階層。
+//
+//   ビルドツリーの形が変わってここが解決できなくなっても、ビルドが止まるので気づける。
+//   古い番号のまま黙って出ることはない。
+import uiapduinoPackage from '../../../../../../../xcratch/package.json';
+
+/**
+ * UIAPduino のカードの説明。Xcratch 版と同じく、後ろに番号を付ける。
+ * @param {React.ReactElement} message - 説明の FormattedMessage
+ * @returns {React.ReactElement} 番号付きの説明
+ */
+const withUiapduinoVersion = message => (
+    <React.Fragment>
+        {message}
+        {` (v${uiapduinoPackage.version})`}
+    </React.Fragment>
+);
+
 export default [
     {
         name: (
@@ -67,7 +101,7 @@ export default [
         extensionId: 'uiapduino',
         iconURL: uiapduinoIconURL,
         insetIconURL: uiapduinoInsetIconURL,
-        description: (
+        description: withUiapduinoVersion(
             <FormattedMessage
                 defaultMessage="Create your own controller!"
                 description="Description for the 'UIAPduino' extension"
@@ -126,7 +160,7 @@ export default [
         extensionId: 'uiapduinoRemap3',
         iconURL: uiapduinoRemap3IconURL,
         insetIconURL: uiapduinoRemap3InsetIconURL,
-        description: (
+        description: withUiapduinoVersion(
             <FormattedMessage
                 defaultMessage="UIAPduino with 8 PWM pins."
                 description="Description for the 'UIAPduino Remap3' extension"
