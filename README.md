@@ -247,11 +247,11 @@ Xcratch 版は版ごとに 1 枚ずつ `.mjs` を作ります。
 |---|---|
 | `scratch-vm/src/extension-support/extension-manager.js` | `builtinExtensions` に `uiapduino` を 1 行追加 |
 | `scratch-gui/src/lib/libraries/extensions/index.jsx` | 拡張機能ライブラリの配列に UIAPduino の項目を追加 |
-| `scratch-gui/src/reducers/locales.js` | `scratch-l10n` のメッセージに UIAPduino の訳文を重ねる |
+| `scratch-gui/src/reducers/locales.js` | `scratch-l10n` のメッセージに UIAPduino の訳文を重ねる。画面の言語を main プロセスへ知らせる |
 | `scratch-gui/src/containers/connection-modal.jsx` | 接続バッジの絵を下位コンポーネントへ渡す |
 | `scratch-gui/src/components/connection-modal/connected-step.jsx` | 接続バッジを差し替え可能にする |
 | `scratch-gui/src/components/connection-modal/connecting-step.jsx` | 同上 |
-| `scratch-desktop/src/main/index.js` | WebHID の許可設定と、USB 抜線時の押しっぱなし解除を追加（後述） |
+| `scratch-desktop/src/main/index.js` | WebHID の許可設定と、USB 抜線時の押しっぱなし解除を追加（後述）。閉じるときの確認（上流は英語の「Leave Scratch?」「Stay / Leave」）を画面の言語で出す |
 
 上流のどのバージョンに対するパッチかは `build-scratch3-uiapduino.ps1` の
 clone 時のタグで固定されています。

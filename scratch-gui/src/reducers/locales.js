@@ -27,6 +27,34 @@ const mergeUiapduinoMessages = messagesByLocale => (
 
 const allMessages = mergeUiapduinoMessages(editorMessages);
 
+// --- 画面の言語を main プロセスへ知らせる -----------------------------------
+//
+// アプリを閉じるときの確認 (「Leave Scratch?」の Stay / Leave) は main プロセスが
+// 出していて、上流では英語の直書きだった。子供が使うので、画面で選んでいる言語で
+// 出したい。main プロセスは画面の言語を知らないので、決まったとき・変わったときに
+// ここから知らせる (scratch-desktop/src/main/index.js の 'uiapduino-locale')。
+//
+// 知らせるのは SELECT_LOCALE (言語メニューで選んだとき) と initLocale()
+// (起動時に OS の言語から決めたとき) の 2 か所。起動時の言語は action を通らずに
+// initLocale() で決まるので、reducer だけでは起動直後の言語が伝わらない。
+//
+// reducer の中で副作用を起こすのは本来の書き方ではないが、言語が決まる場所が
+// この 2 つしかなく、ここ以外に手を入れると上流のファイルを増やすことになる。
+// 送るのは同じ値を上書きするだけなので、何度送られても害はない。
+//
+// require('electron') と直接書くと Web 版の scratch-gui のビルドで webpack が
+// 解決しようとして失敗する。実行時にだけ引ける window.require を使う
+// (scratch3_uiapduino/index.js の _releaseHeldInput() と同じ)。
+const notifyMainOfLocale = locale => {
+    const nodeRequire = typeof window === 'undefined' ? null : window.require;
+    if (!nodeRequire) return;
+    try {
+        nodeRequire('electron').ipcRenderer.send('uiapduino-locale', locale);
+    } catch (e) {
+        // Electron の外 (Web 版) では何もしない
+    }
+};
+
 const UPDATE_LOCALES = 'scratch-gui/locales/UPDATE_LOCALES';
 const SELECT_LOCALE = 'scratch-gui/locales/SELECT_LOCALE';
 
@@ -41,6 +69,7 @@ const reducer = function (state, action) {
     if (typeof state === 'undefined') state = initialState;
     switch (action.type) {
     case SELECT_LOCALE:
+        notifyMainOfLocale(action.locale);
         return Object.assign({}, state, {
             isRtl: isRtl(action.locale),
             locale: action.locale,
@@ -77,6 +106,7 @@ const setLocales = function (localesMessages) {
 };
 const initLocale = function (currentState, locale) {
     if (currentState.messagesByLocale.hasOwnProperty(locale)) {
+        notifyMainOfLocale(locale);
         return Object.assign(
             {},
             currentState,

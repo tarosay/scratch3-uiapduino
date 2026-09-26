@@ -194,6 +194,56 @@ const setupWebHid = session => {
     });
 };
 
+// --- 閉じるときの確認を画面の言語で出す -------------------------------------
+//
+// 上流は「Leave Scratch?」「Stay / Leave」を英語で直書きしていた。子供が使うので、
+// 画面で選んでいる言語で出す。
+//
+// main プロセスは画面の言語を知らないので、scratch-gui の reducers/locales.js が
+// 言語が決まったとき・変わったときに 'uiapduino-locale' で知らせてくる。
+// それを覚えておき、確認を出すときに引く。
+//
+// 訳文を持っているのは日本語 (漢字) と にほんご (ひらがな) だけ。
+// それ以外の言語は上流と同じ英語で出す。
+
+/**
+ * 画面で選んでいる言語。scratch-gui の locale の値 ('en' / 'ja' / 'ja-Hira' など)。
+ * 起動時の既定は scratch-gui と同じ 'en'。
+ * @type {string}
+ */
+let guiLocale = 'en';
+
+/**
+ * 閉じるときの確認の文言。キーは scratch-gui の locale。
+ * @type {Object<string, {message: string, detail: string, stay: string, leave: string}>}
+ */
+const LEAVE_DIALOG_TEXT = {
+    'en': {
+        message: 'Leave Scratch?',
+        detail: 'Any unsaved changes will be lost.',
+        stay: 'Stay',
+        leave: 'Leave'
+    },
+    'ja': {
+        message: 'Scratch を閉じますか？',
+        detail: '保存していない変更は消えてしまいます。',
+        stay: '戻る',
+        leave: '閉じる'
+    },
+    'ja-Hira': {
+        message: 'Scratch を とじますか？',
+        detail: 'ほぞんしていない へんこうは きえてしまいます。',
+        stay: 'もどる',
+        leave: 'とじる'
+    }
+};
+
+/**
+ * 今の画面の言語で、閉じるときの確認の文言を返す。訳文が無い言語は英語。
+ * @returns {{message: string, detail: string, stay: string, leave: string}} 文言
+ */
+const leaveDialogText = () => LEAVE_DIALOG_TEXT[guiLocale] || LEAVE_DIALOG_TEXT.en;
+
 // --- UIAPduino が抜かれたときの後始末 ---------------------------------------
 //
 // UIAPduino は HID マウスそのものなので、ボタンを押したままの状態で USB を抜かれると、
@@ -517,12 +567,14 @@ const createMainWindow = () => {
     });
 
     webContents.on('will-prevent-unload', ev => {
+        // 上流は英語の直書きだった。画面で選んでいる言語で出す (leaveDialogText を参照)。
+        const text = leaveDialogText();
         const choice = dialog.showMessageBoxSync(window, {
             title: APP_NAME,
             type: 'question',
-            message: 'Leave Scratch?',
-            detail: 'Any unsaved changes will be lost.',
-            buttons: ['Stay', 'Leave'],
+            message: text.message,
+            detail: text.detail,
+            buttons: [text.stay, text.leave],
             cancelId: 0, // closing the dialog means "stay"
             defaultId: 0 // pressing enter or space without explicitly selecting something means "stay"
         });
@@ -608,6 +660,12 @@ app.on('ready', () => {
 // UIAPduino が抜かれたとき、押しっぱなしの心当たりがあればレンダラから呼ばれる。
 ipcMain.on('uiapduino-release-held-input', () => {
     releaseHeldInput();
+});
+
+// 画面の言語が決まったとき・変わったときに scratch-gui の reducers/locales.js から呼ばれる。
+// 閉じるときの確認をその言語で出すために覚えておく (leaveDialogText を参照)。
+ipcMain.on('uiapduino-locale', (event, locale) => {
+    if (typeof locale === 'string') guiLocale = locale;
 });
 
 ipcMain.on('open-about-window', () => {
