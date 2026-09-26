@@ -253,7 +253,9 @@
       8 本（3 / 5 / 9 / TX / RX / A1 / A2 / A3）に増えます。
       サーボをたくさん動かしたり、LED の明るさを何か所も変えたりできます。
       基板の LED（2 番）は、Remap3 では点灯と消灯だけになります。
-      今のところ Xcratch 版だけです。読み込み方は<a href="#how">使い方</a>にあります。
+      Xcratch 版でもデスクトップ版でも使えます。
+      Xcratch 版の読み込み方は<a href="#how">使い方</a>に、
+      デスクトップ版での選び方は<a href="#desktop">デスクトップ版</a>にあります。
     </p>
   </section>
 
@@ -342,6 +344,12 @@
       Scratch Desktop に組み込んだ版です。ブロックは Xcratch 版と同じものを共有していて、
       できることは変わりません。ブラウザを使わないので、WebHID の対応ブラウザが要らない
       という違いがあります。
+    </p>
+    <p>
+      「拡張機能を追加」を押すと、<strong>「UIAPduino」と「UIAPduino Remap3」の 2 枚のカード</strong>が
+      並びます。PWM を 8 本使いたいときは「UIAPduino Remap3」を選んでください。
+      基板に焼くスケッチは 2 つで違いますが、パレットの末尾の
+      <code>スケッチ (プロトコル 8) を書き込む</code> を押せば、選んだほうのスケッチが焼かれます。
     </p>
     <p>
       <a href="https://github.com/tarosay/scratch3-uiapduino/releases">Releases</a>
