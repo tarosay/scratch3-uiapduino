@@ -2,8 +2,14 @@
 //
 // スケッチの .bin を base64 の .js に焼き直す。
 //
-//   sketches/ScratchUiapduino.ino.bin
-//     → scratch-vm/src/extensions/scratch3_uiapduino/sketchBin.js
+//   HID 版     sketches/ScratchUiapduino.ino.bin
+//                → scratch-vm/src/extensions/scratch3_uiapduino/sketchBin.js
+//   Remap3 版  sketches/ScratchUiapduino-remap3.ino.bin
+//                → scratch-vm/src/extensions/scratch3_uiapduino/sketchBinRemap3.js
+//
+// 2 つの .bin は同じ .ino を Tools → PWM の設定違いでビルドしたもの
+// (sketch.yaml のプロファイル uiapduino / uiapduino-remap3)。
+// どちらの .js を読むかは variant.js / variantRemap3.js が決める。
 //
 // 拡張機能に .bin を同梱するのは、拡張機能とスケッチの版を必ず一致させるため。
 // 別々に配ると、今ある「プロトコルが合わないので焼き直してください」を
@@ -19,7 +25,8 @@
 // 生成物はリポジトリに追跡させ、このスクリプトは .ino を直したときだけ手で走らせる。
 //
 // 使い方 (xcratch/ で):
-//   node ./scripts/embed-bin.mjs [.bin のパス]
+//   node ./scripts/embed-bin.mjs            HID 版
+//   node ./scripts/embed-bin.mjs remap3     Remap3 版
 //
 // 出力は決定的。同じ .bin からは必ず同じ .js が出るので、
 // 走らせ直しても中身が変わらなければ git の差分は出ない。
@@ -34,13 +41,30 @@ const FLASH_SIZE = 16384;
 /** base64 を 1 行に詰める文字数。長い 1 行にすると差分が読めず lint にも掛かる。 */
 const CHUNK = 80;
 
+/**
+ * 版ごとの入力と出力。引数の名前で引く。
+ * mjs は、この生成物と一緒にコミットする公開物 (rollup.config.mjs の BUILDS と同じ名前)。
+ * @type {Object<string, {bin: string, out: string, mjs: string}>}
+ */
+const VARIANTS = {
+    hid: {bin: 'ScratchUiapduino.ino.bin', out: 'sketchBin.js', mjs: 'uiapduino.mjs'},
+    remap3: {
+        bin: 'ScratchUiapduino-remap3.ino.bin', out: 'sketchBinRemap3.js', mjs: 'uiapduino-remap3.mjs'
+    }
+};
+
+const variantName = process.argv[2] || 'hid';
+const variant = VARIANTS[variantName];
+if (!variant) {
+    console.error(`知らない版です: ${variantName} (${Object.keys(VARIANTS).join(' / ')})`);
+    process.exit(1);
+}
+
 const projectDir = process.cwd();
-const binPath = process.argv[2] ?
-    path.resolve(process.argv[2]) :
-    path.resolve(projectDir, '../sketches/ScratchUiapduino.ino.bin');
+const binPath = path.resolve(projectDir, '../sketches', variant.bin);
 const inoPath = path.resolve(projectDir, '../sketches/ScratchUiapduino/ScratchUiapduino.ino');
 const outPath = path.resolve(
-    projectDir, '../scratch-vm/src/extensions/scratch3_uiapduino/sketchBin.js');
+    projectDir, '../scratch-vm/src/extensions/scratch3_uiapduino', variant.out);
 
 if (!fs.existsSync(binPath)) {
     console.error(`.bin がありません: ${binPath}`);
@@ -83,14 +107,18 @@ for (let i = 0; i < base64.length; i += CHUNK) {
     chunks.push(`    '${base64.slice(i, i + CHUNK)}'`);
 }
 
+const command = variantName === 'hid' ?
+    'node ./scripts/embed-bin.mjs' :
+    `node ./scripts/embed-bin.mjs ${variantName}`;
+
 const source = `// このファイルは xcratch/scripts/embed-bin.mjs が作る。手で直さない。
 //
-// 中身は sketches/ScratchUiapduino.ino.bin をそのまま base64 にしたもの。
+// 中身は sketches/${variant.bin} をそのまま base64 にしたもの。
 // 「スケッチを書き込む」ブロックが、これを基板の Flash へ流し込む。
 //
 // .ino を直したら、ビルドし直した .bin を sketches/ へ置いてから
-//   node ./scripts/embed-bin.mjs
-// を走らせ、この生成物と docs/uiapduino.mjs を一緒にコミットすること。
+//   ${command}
+// を走らせ、この生成物と docs/${variant.mjs} を一緒にコミットすること。
 
 /**
  * 同梱している .bin (base64)。

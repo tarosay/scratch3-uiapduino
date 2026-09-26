@@ -129,7 +129,7 @@ Google Chrome 151.0.7922.137 (x86_64)
 | Xcratch 版の非対応ブラウザ | WebHID の無いブラウザでは説明 3 行だけを出す。**Firefox で確認済み** |
 | Xcratch 版の抜線 | 押しっぱなしの解除はブラウザではできないが、**実機では問題にならなかった** |
 | プロジェクトの相互運用 | Xcratch で保存した `.sb3` をデスクトップ版で開けることを確認済み |
-| スケッチの版の照合 | PING の上位バイトで名乗る。変種が 1 つなので今は結果が変わらない |
+| スケッチの版の照合 | PING の上位バイトで名乗る。版は HID 版 (0) と Remap3 版 (1)。**Remap3 版は Xcratch と実機で 8 本すべての PWM 出力を確認済み** |
 
 **ピン操作のブロックは実機で確認済みです。** そのほか以下も確認しています。
 
@@ -198,23 +198,33 @@ Google Chrome 151.0.7922.137 (x86_64)
 | `scratch-vm/src/extensions/scratch3_uiapduino/index.js` | ブロック定義。通信方式を一切知らない |
 | `scratch-vm/src/extensions/scratch3_uiapduino/uiapduinoProcessor.js` | WebHID 通信 + コマンドキュー |
 | `scratch-vm/src/extensions/scratch3_uiapduino/rv003usbFlasher.js` | 基板への書き込み処理。**第三者のコード (MIT)。** 下記 License を参照 |
+| `scratch-vm/src/extensions/scratch3_uiapduino/variant.js` | 版ごとに違う値（HID 版）。ID・URL・PWM のピン・同梱スケッチ |
+| `scratch-vm/src/extensions/scratch3_uiapduino/variantRemap3.js` | 同じく Remap3 版。Xcratch 版のビルドでだけ使う |
 | `scratch-vm/src/extensions/scratch3_uiapduino/sketchBin.js` | 同梱スケッチ (base64)。**自動生成。手で書かない** |
+| `scratch-vm/src/extensions/scratch3_uiapduino/sketchBinRemap3.js` | 同じく Remap3 版。**自動生成。手で書かない** |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino.png` | 拡張機能ライブラリのカード画像 (600x372) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-small.png` | 小アイコン (80x80) |
+| `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3-menu.png` | Remap3 版のカテゴリ一覧の絵 (80x80)。`variantRemap3.js` に base64 で埋め込んである |
+| `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3-small.png` | Remap3 版の Xcratch のカードの小さな絵 (80x80、背景透明)。`uiapduino-small.png` の線を `#3F51B5` にしたもの |
+| `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3.png` | Remap3 版の Xcratch のカードの絵 (600x372)。`uiapduino.png` の緑を `#3F51B5` の青に置き換えたもの |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/SketchWrite.png` | 書き込みブロックのアイコン (80x80) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-illustration.png` | 接続モーダル用の画像 (266x165) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/usb-hid-white.svg` | 接続バッジの USB マーク (20x20) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/messages.js` | GUI 側の日本語訳（`ja` / `ja-Hira`） |
 | `sketches/ScratchUiapduino/ScratchUiapduino.ino` | デバイス側スケッチ |
 | `sketches/ScratchUiapduino/sketch.yaml` | ボードと Tools メニューの設定 |
-| `sketches/ScratchUiapduino.ino.bin` | 上をビルドしたもの。`sketchBin.js` の元 |
+| `sketches/ScratchUiapduino.ino.bin` | 上をビルドしたもの（HID 版）。`sketchBin.js` の元 |
+| `sketches/ScratchUiapduino-remap3.ino.bin` | 同じ `.ino` を Tools → PWM = TIM2 Remap3 でビルドしたもの。`sketchBinRemap3.js` の元 |
 | `build-scratch3-uiapduino.ps1` | ビルドスクリプト |
 | `xcratch/` | Xcratch 版のビルド環境（詳細は [`xcratch/README.md`](xcratch/README.md)） |
 | `docs/uiapduino.mjs` | **配っている Xcratch 版のモジュール**。GitHub Pages が `/docs` を公開している |
 | `README.md` / `LICENSE` | このファイルとライセンス |
 
-`xcratch/` の下にブロックの実装はありません。ビルドのたびに上の 2 ファイルを複製して
+`xcratch/` の下にブロックの実装はありません。ビルドのたびに上のファイルを複製して
 使っています。**直すのは常に `scratch-vm/src/extensions/scratch3_uiapduino/` の方です。**
+
+HID 版と Remap3 版は同じ `index.js` / `uiapduinoProcessor.js` から作ります。
+版ごとに違う値は `variant.js` / `variantRemap3.js` にしか書きません。
 
 `index.js` と `uiapduinoProcessor.js` の分離は Tello 拡張と同じで、
 ブロック層は通信方式を一切知りません。プロトコルを変える場合も
@@ -692,7 +702,8 @@ size_t KeyboardClass::press(uint8_t key) {
 
 | 版 | 内容 |
 |---|---|
-| 0 | HID 版（キーボード / マウス / ピン操作） |
+| 0 | HID 版（キーボード / マウス / ピン操作）。Tools → PWM = TIM2 Default |
+| 1 | Remap3 版。HID 版と同じ機能で、PWM を 8 本出せる。Tools → PWM = TIM2 Remap3 |
 
 版が違えばコマンドの意味ごと違うので、**バージョン不一致とは分けて報告します。**
 バージョン不一致は書き込み直せば直りますが、版違いは「その版に対応した別の
@@ -701,10 +712,11 @@ size_t KeyboardClass::press(uint8_t key) {
 **版 0 は変えてはいけません。** 版を名乗らない世代のスケッチは
 `PROTOCOL_VERSION` だけを 1 バイトで返すため上位バイトが 0 になり、
 そのまま HID 版として扱われます。**既に配ってしまった基板を弾かないための約束**です。
-新しい版は 1 から順に振り、以下の 2 箇所に同じ番号を足します。
+新しい版は 1 から順に振り、以下の 3 箇所に同じ番号を足します。
 
 - `sketches/ScratchUiapduino/ScratchUiapduino.ino` の `SKETCH_VARIANT`
-- `scratch-vm/src/extensions/scratch3_uiapduino/uiapduinoProcessor.js` の `SKETCH_VARIANT` と `VARIANT`
+- `scratch-vm/src/extensions/scratch3_uiapduino/variant*.js` の `SKETCH_VARIANT`（版ごとに 1 ファイル）
+- `scratch-vm/src/extensions/scratch3_uiapduino/uiapduinoProcessor.js` の `VARIANT`（全部の版の名前）
 
 バージョンは以下の 2 箇所にあり、**必ず同じ値**でなければなりません。
 互換性の無い変更（コマンド ID・応答形式・パラメータの意味の変更）をしたら両方を上げます。
@@ -1138,11 +1150,13 @@ Arduino IDE 2.x はスケッチを開いたときにこのプロファイルを�
 | Board | HID ProMicro CH32V003 | `UIAP_HID:ch32v:CH32V003` |
 | Board Version | V1.4 | `pnum=V14` |
 | USB | **Keyboard+Mouse+WebHID** | `usb=kbdweb` |
-| PWM | **TIM2 Default (pin 2 / PC0)** | `pwm=default` |
+| PWM | **TIM2 Default (pin 2 / PC0)**（HID 版）/ TIM2 Remap3 (pins 9/15/16)（Remap3 版） | `pwm=default` / `pwm=remap3` |
 | Optimize | Smallest (-Os) with LTO | `opt=oslto` |
 | U(S)ART support | **None (use UIAPSerial)** | `xserial=none` |
 
-PWM の設定を間違えると `PWMMIN_REQUIRE_DEFAULT()` がコンパイル時に止めます。
+PWM の設定は、どちらを選んでもビルドは通ります。**どちらの版になるかを決めるのがこの設定です。**
+スケッチは設定から `SKETCH_VARIANT` を決めて PING の応答で名乗るので、
+拡張機能と違う版を焼いてしまっても、繋いだ時点で「別の版」と分かります。
 
 `xserial` は既定値ですが明示してあります。`HardwareSerial` にすると、`Serial` を一度も
 呼ばなくても Flash が約 **4748 バイト**増えて 16KB に収まりません。シリアル通信は
@@ -1161,16 +1175,20 @@ PWM の設定を間違えると `PWMMIN_REQUIRE_DEFAULT()` がコンパイル時
 **`.ino` を直したら、拡張機能に埋め込んである `.bin` も作り直してください。**
 忘れると、書き込みブロックが古いスケッチを焼き続けます。
 
-```
-sketches/ScratchUiapduino.ino.bin          … 埋め込みの元（追跡している）
-scratch-vm/src/extensions/scratch3_uiapduino/sketchBin.js  … 生成物。手で書かない
-```
+同じ `.ino` から 2 つの版を作るので、`.bin` も 2 つあります。
+違うのは Tools → PWM だけで、`sketch.yaml` のプロファイルで選びます。
 
-1. arduino-cli でビルドし、**`.bin` だけ**を `sketches/ScratchUiapduino.ino.bin` へ
-   上書きコピーする（`.elf` / `.hex` / `.map` は要りません）
-2. `cd xcratch; npm run embed-bin`
+| 版 | プロファイル | 埋め込みの元（追跡している） | 生成物（手で書かない） |
+|---|---|---|---|
+| HID 版 | `uiapduino`（既定） | `sketches/ScratchUiapduino.ino.bin` | `sketchBin.js` |
+| Remap3 版 | `uiapduino-remap3` | `sketches/ScratchUiapduino-remap3.ino.bin` | `sketchBinRemap3.js` |
+
+1. arduino-cli で両方のプロファイルをビルドし、**`.bin` だけ**を上の名前で `sketches/` へ
+   上書きコピーする（`.elf` / `.hex` / `.map` は要りません）。
+   Remap3 版は `--profile uiapduino-remap3` を付けます
+2. `cd xcratch; npm run embed-bin` と `npm run embed-bin -- remap3`
 3. `npm run build`
-4. `.bin` と `sketchBin.js` と `docs/uiapduino.mjs` を**一緒にコミットする**
+4. `.bin` と `sketchBin*.js` と `docs/*.mjs` を**一緒にコミットする**
 
 `embed-bin` は `.bin` の大きさ（16,384 バイト以下）を確かめ、`.ino` から
 `PROTOCOL_VERSION` を読んで生成物に書き込みます。**その番号が拡張機能側の定数と
@@ -1189,10 +1207,11 @@ scratch-vm/src/extensions/scratch3_uiapduino/sketchBin.js  … 生成物。手�
 （`.map` だけは中にプラットフォームのパスが文字列で入るので変わります）。
 中身が同じなら、固定先を上げても基板を焼き直す必要はありません。
 
-arduino-cli なら引数なしでビルドできます。
+arduino-cli なら引数なしで HID 版をビルドできます。Remap3 版はプロファイルを指定します。
 
 ```
 arduino-cli compile sketches/ScratchUiapduino
+arduino-cli compile --profile uiapduino-remap3 sketches/ScratchUiapduino
 ```
 
 ### ⚠ USB は `Keyboard+Mouse+WebHID` でなければならない
@@ -1385,6 +1404,11 @@ PWM 非対応ピンに `analogWrite` ブロックを使った場合、
 
 「ピンを入力／出力にする」ブロック（`PIN_MODE`）は先に `Pwm_stop()` を呼ぶので、
 PWM 中のピンを普通の GPIO に戻せます。
+
+**「出力」にしたピンは Low から始まります。** `pinMode(OUTPUT)` は出力する値（`OUTDR`）に
+触れないので、そのままだと前に「入力（プルアップ）」や「出力を 1」を使ったピンが
+出力にした瞬間に High を出します。実機で、D3 と D5 に繋いだ LED が「出力にしただけ」で
+点きました（2026-09-27）。スケッチは切り替える前に Low を書いてから出力にします。
 
 ### 🦾 サーボのブロック
 

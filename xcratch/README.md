@@ -3,23 +3,39 @@
 [Xcratch](https://xcratch.github.io/) に読み込ませる拡張機能モジュールを作る場所。
 
 デスクトップ版（`scratch-desktop`）とは**ブロックの実装を共有している**。実体は
-`scratch-vm/src/extensions/scratch3_uiapduino/` の 2 ファイルで、ここにあるのは
+`scratch-vm/src/extensions/scratch3_uiapduino/` にあり、ここにあるのは
 Xcratch 固有のもの（拡張機能一覧に出す情報とビルド設定）だけ。
+
+**1 つのソースから 2 つの版を作る。** 版の一覧は `scripts/builds.mjs`。
+
+| 版 | モジュール | 本体の複製 | カード |
+|---|---|---|---|
+| HID 版 | `uiapduino.mjs` | `src/vm/extensions/block` | `entry/` |
+| Remap3 版（PWM 8 本） | `uiapduino-remap3.mjs` | `src/vm/extensions/blockRemap3` | `entry-remap3/` |
+
+本体（`index.js` / `uiapduinoProcessor.js`）はどちらの版も同じファイル。
+版で違うのは `variant.js` だけで、Remap3 版の複製には `variantRemap3.js` を
+`variant.js` という名前で置く（`sync-block.mjs`）。デスクトップ版は HID 版だけ。
 
 ```
 xcratch/
-  package.json                                 extensionId と依存
+  package.json                                 バージョンと依存
+  scripts/builds.mjs                           作る版の一覧
   scripts/setup-dev.mjs                        scratch-vm へのリンクを張る（最初に一度）
-  scripts/sync-block.mjs                       本体を複製する（ビルドのたびに自動）
-  scripts/rollup.config.mjs                    entry と本体を 1 枚の .mjs にまとめる
+  scripts/sync-block.mjs                       本体を版ごとに複製する（ビルドのたびに自動）
+  scripts/rollup.config.mjs                    版ごとに entry と本体を 1 枚の .mjs にまとめる
   scripts/publish-docs.mjs                     成果物を docs/ へ置く（ビルドのたびに自動）
-  src/gui/lib/libraries/extensions/entry/      一覧のカード（名前・説明・アイコン）
+  scripts/embed-bin.mjs                        .bin を sketchBin*.js に焼き直す（.ino を直したとき）
+  src/gui/lib/libraries/extensions/entry/      一覧のカード。createEntry.js が共通部分、index.jsx が HID 版
+  src/gui/lib/libraries/extensions/entry-remap3/  同じく Remap3 版
   src/vm/extension-support  -> scratch-vm      setup-dev が張るリンク
   src/vm/util               -> scratch-vm      setup-dev が張るリンク
-  src/vm/extensions/block                      本体の複製。触らないこと
-  dist/uiapduino.mjs                           中間成果物。追跡しない
+  src/vm/extensions/block                      本体の複製 (HID 版)。触らないこと
+  src/vm/extensions/blockRemap3                本体の複製 (Remap3 版)。触らないこと
+  dist/*.mjs                                   中間成果物。追跡しない
 
 ../docs/uiapduino.mjs                          配るのはこれ（GitHub Pages の公開元）
+../docs/uiapduino-remap3.mjs                   Remap3 版。⚠ 名前が決まるまで公開しない
 ```
 
 ## 公開 URL
@@ -38,11 +54,11 @@ https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs
 
 GitHub Pages の公開元は **main ブランチの `/docs`** に設定すること。
 
-将来の変種（I2C 版など）は横に並べる。`uiapduino-i2c.mjs` のように。
+変種は横に並べる。Remap3 版は `uiapduino-remap3.mjs`、将来の I2C 版なら `uiapduino-i2c.mjs`。
 そのとき `extensionId` も必ず別にすること（同じにすると片方のプロジェクトが
-もう片方を掴む）。
+もう片方を掴む）。Remap3 版は `uiapduinoRemap3`。
 
-**`src/vm/extensions/block` は複製です。直すのは `scratch-vm/src/extensions/scratch3_uiapduino/`
+**`src/vm/extensions/block*` は複製です。直すのは `scratch-vm/src/extensions/scratch3_uiapduino/`
 の方。** `npm run build` のたびに `prebuild` が複製し直すので、直したらビルドするだけでよい。
 複製は追跡していないので、間違えて触っても次のビルドで消えます。
 
@@ -82,8 +98,8 @@ npm run build
 
 | | すること |
 |---|---|
-| `prebuild` | 本体を `scratch-vm/` から `src/vm/extensions/block/` へ複製 |
-| `build` | rollup で `dist/uiapduino.mjs` を作る |
+| `prebuild` | 本体を `scratch-vm/` から `src/vm/extensions/block*/` へ版ごとに複製 |
+| `build` | rollup で `dist/uiapduino.mjs` と `dist/uiapduino-remap3.mjs` を作る |
 | `postbuild` | それを `../docs/` へ置く（＝公開される場所） |
 
 **試しにビルドしただけでも `docs/` は更新される。** 毎回コピーしているのは
@@ -124,7 +140,7 @@ npx --yes live-server "D:\git\github\scratch3-uiapduino\xcratch\dist" --host=127
 ローカル宛てだから安全、ではない。
 
 **2. `xcratch/` を配ると `node_modules` まで監視する。** 正しいディレクトリで
-実行していても数万ファイルを抱えることになる。`dist` なら 2 ファイルで済む。
+実行していても数万ファイルを抱えることになる。`dist` なら版ごとに 2 ファイルで済む。
 
 1. [Xcratch エディタ](https://xcratch.github.io/editor/) を開く
 2. 「拡張機能を追加」→「Extension Loader」
@@ -134,6 +150,12 @@ npx --yes live-server "D:\git\github\scratch3-uiapduino\xcratch\dist" --host=127
 
 ```
 https://xcratch.github.io/editor/?extension=http://127.0.0.1:5500/uiapduino.mjs
+```
+
+Remap3 版はファイル名を `uiapduino-remap3.mjs` に替える。
+
+```
+https://xcratch.github.io/editor/?extension=http://127.0.0.1:5500/uiapduino-remap3.mjs
 ```
 
 `dist` をルートにして配るので、URL に `/dist` は付かない。

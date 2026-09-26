@@ -85,3 +85,4 @@ ignore/
 /xcratch/src/vm/extension-support
 /xcratch/src/vm/util
 /xcratch/src/vm/extensions/block
+/xcratch/src/vm/extensions/blockRemap3

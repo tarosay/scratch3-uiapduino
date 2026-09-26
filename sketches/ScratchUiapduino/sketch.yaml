@@ -7,7 +7,8 @@
 #   pnum=V14        Board Version   : V1.4
 #   usb=kbdweb      USB             : Keyboard+Mouse+WebHID
 #   opt=oslto       Optimize        : Smallest (-Os) with LTO
-#   pwm=default     PWM             : TIM2 Default (pin 2 / PC0)
+#   pwm=default     PWM             : TIM2 Default (pin 2 / PC0)     → HID 版
+#   pwm=remap3      PWM             : TIM2 Remap3 (pins 9/15/16)     → Remap3 版
 #   xserial=none    U(S)ART support : None (use UIAPSerial)
 #
 # xserial は既定値だが明示してある。HardwareSerial にすると、Serial を一度も
@@ -17,13 +18,20 @@
 # usb は kbdweb でなければならない。WebHID Only ではキーボードとマウスの
 # インタフェースが無くなり、そのブロックが動かない。
 #
-# PWM の設定を間違えた場合はスケッチ側の PWMMIN_REQUIRE_DEFAULT() が
-# コンパイル時に止める。
+# 2 つのプロファイルは pwm だけが違う。同じ .ino から 2 つの版を作るため。
+# 既定は HID 版。Remap3 版は --profile uiapduino-remap3 でビルドする。
+# どちらの版になったかはスケッチ側の SKETCH_VARIANT が Tools → PWM から決める。
 
 profiles:
   uiapduino:
-    notes: UIAPduino (HID ProMicro CH32V003) / Keyboard+Mouse+WebHID
+    notes: UIAPduino (HID ProMicro CH32V003) / Keyboard+Mouse+WebHID / HID 版
     fqbn: UIAP_HID:ch32v:CH32V003:pnum=V14,usb=kbdweb,opt=oslto,pwm=default,xserial=none
+    platforms:
+      - platform: UIAP_HID:ch32v (1.2.12)
+        platform_index_url: https://raw.githubusercontent.com/tarosay/board_manager_files/main/package_uiap_hid_index.json
+  uiapduino-remap3:
+    notes: UIAPduino (HID ProMicro CH32V003) / Keyboard+Mouse+WebHID / Remap3 版
+    fqbn: UIAP_HID:ch32v:CH32V003:pnum=V14,usb=kbdweb,opt=oslto,pwm=remap3,xserial=none
     platforms:
       - platform: UIAP_HID:ch32v (1.2.12)
         platform_index_url: https://raw.githubusercontent.com/tarosay/board_manager_files/main/package_uiap_hid_index.json

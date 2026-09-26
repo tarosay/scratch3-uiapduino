@@ -6,8 +6,13 @@
  * ボード: HID ProMicro CH32V003
  *   Tools → Board Version : V1.4
  *   Tools → USB           : Keyboard+Mouse+WebHID
- *   Tools → PWM           : TIM2 Default (pin 2 / PC0)
+ *   Tools → PWM           : TIM2 Default (pin 2 / PC0)   → HID 版
+ *                           TIM2 Remap3 (pins 9/15/16)   → Remap3 版
  *   Tools → U(S)ART       : None (use UIAPSerial)   ← 既定のまま
+ *
+ * 1 つの .ino から 2 つの版を作る。違うのは PWM を出せるピンだけで、
+ * どちらになるかは Tools → PWM で決まる (SKETCH_VARIANT を参照)。
+ * sketch.yaml に両方のプロファイルがある。
  *   Tools → Optimize      : Smallest (-Os) with LTO
  *
  * U(S)ART を HardwareSerial にしてはいけない。標準の `Serial` は一度も呼ばなくても
@@ -104,8 +109,10 @@
 #define NEOPIXELMIN_ATOMIC
 #include <NeoPixelmin.h>
 
-// Tools → PWM が TIM2 Default になっていなければコンパイルエラーにする
-PWMMIN_REQUIRE_DEFAULT();
+// Tools → PWM は TIM2 Default でも TIM2 Remap3 でもビルドできる。
+// PWMMIN_REQUIRE_DEFAULT() / PWMMIN_REQUIRE_REMAP3() で片方に縛らないのはそのため。
+// どちらでビルドしたかは SKETCH_VARIANT が PING の応答で名乗るので、
+// 拡張機能と組み合わせを間違えても、繋いだ時点で「別の版」と分かる。
 
 // ── 応答ステータス ──────────────────────────────────────────────────────────
 #define RSP_MARKER 0x52
@@ -182,8 +189,17 @@ PWMMIN_REQUIRE_DEFAULT();
 //   新しい版を作るときは 1 から順に振り、Scratch 側 uiapduinoProcessor.js の
 //   VARIANT にも同じ番号と名前を足すこと。
 //
-//   0 : HID 版 (キーボード / マウス / ピン操作)
+//   0 : HID 版 (キーボード / マウス / ピン操作)。Tools → PWM = TIM2 Default
+//   1 : Remap3 版。Tools → PWM = TIM2 Remap3。PWM を 8 本出せる (pwmPinOk() を参照)。
+//       機能は HID 版と同じで、違うのは PWM を出せるピンだけ
+//
+// 番号は Tools → PWM の設定から決める。手で書くと、設定と番号が
+// 食い違ったまま焼けてしまう。
+#ifdef PWMMIN_TIM2_REMAP3
+#define SKETCH_VARIANT 1
+#else
 #define SKETCH_VARIANT 0
+#endif
 
 // ── コマンド ID ─────────────────────────────────────────────────────────────
 // 0x01 は接続通知で予約。0x01-0x11 は uiapruby が使用中のため 0x20 以降を使う。
@@ -437,12 +453,36 @@ static bool analogChannelOk(uint8_t ch) {
 }
 
 /**
- * PWM を出せるピンか。Tools → PWM = TIM2 Default のときの一覧。
- * TIM1: 0 / 5 / 6 / 12   TIM2: 2
- * （Remap3 にすると TIM2 が 3 / 9 / 15 / 16 に変わる）
+ * TIM2 の PWM ピンか。Tools → PWM で変わるのはここだけ (PWMmin.h の一覧と同じ)。
+ *
+ *   TIM2 Default : D2 (PC0, オンボード LED)
+ *   TIM2 Remap3  : D3 (PC1) / D9 (PC7) / D15 (PD5) / D16 (PD6)
+ *
+ * Remap3 では D2 は PWM を出せない。PWMmin の Pwm_write() に D2 の分岐が
+ * 無くなり、呼んでも黙って何もしない。だからここで弾いて RSP_ERR にする。
+ *
+ * D3 には基板上に 2.2kΩ のプルアップがある (PWMmin.h)。PWM を出している間は
+ * ピンが High / Low を決めるので効かないが、止めて入力に戻すと High 側へ引かれる。
+ * PWMmin のスケッチ例 PWMminRemap3 はこれを理由に D3 を外しているが、
+ * こちらは使えるようにしてある。
+ *
+ * D15 / D16 は UART の Tx / Rx と同じ足。シリアルを begin した後は
+ * digitalPinOk() が先に弾くので、ここで見る必要はない。
+ */
+static bool pwmPinIsTim2(uint8_t pin) {
+#ifdef PWMMIN_TIM2_REMAP3
+  return pin == 3 || pin == 9 || pin == 15 || pin == 16;
+#else
+  return pin == 2;
+#endif
+}
+
+/**
+ * PWM を出せるピンか。TIM1 の 4 本 (D0 / D5 / D6 / D12) はどちらの版でも同じ。
+ * HID 版は TIM2 と合わせて 5 本、Remap3 版は 8 本。
  */
 static bool pwmPinOk(uint8_t pin) {
-  return pin == 0 || pin == 2 || pin == 5 || pin == 6 || pin == 12;
+  return pin == 0 || pin == 5 || pin == 6 || pin == 12 || pwmPinIsTim2(pin);
 }
 
 // ── PWM の周波数 ────────────────────────────────────────────────────────────
@@ -458,28 +498,29 @@ static bool pwmPinOk(uint8_t pin) {
 //   Scratch の利用者にそれはできない。
 //
 // PWMmin の周波数は「ピンごと」ではなく「タイマーごと」にしか設定できない。
-// Tools → PWM = TIM2 Default では TIM2 は D2 だけ、残りの D0/D5/D6/D12 が TIM1。
+// TIM1 は D0/D5/D6/D12。TIM2 は HID 版が D2 だけ、Remap3 版が D3/D9/D15/D16。
 //
 // しかも Pwm_write() は呼ばれるたびに TIMn->PSC を書き戻す。つまり最後に
 // 周波数を言った者が勝つ。だから PWM を出すコマンドは毎回それを持ってくる。
 //
 // ⚠ 残る制約は消せない。同じタイマーのピンでサーボとアナログ出力を同時に使うと、
 //   後から出した方の周波数に揃う。TIM1 は D0/D5/D6/D12 を共有しているため。
+//   Remap3 版では TIM2 の D3/D9/D15/D16 も同じ関係になる。
 //   ハードウェアの制約なので、ここで直せるものではない。
 
 /**
  * ピンの属するタイマーだけ周波数を変える。
  *
  * Pwm_freq() は TIM1 と TIM2 の両方を変えてしまうので使わない。
- * サーボを D5 (TIM1) に出しただけで、LED の D2 (TIM2) まで 50Hz になる。
+ * サーボを D5 (TIM1) に出しただけで、LED の D2 (HID 版の TIM2) まで 50Hz になる。
  *
- * Tools → PWM = TIM2 Default 前提。TIM2 は D2 だけで、残りは TIM1。
- * Remap3 では TIM2 が D3/D9/D15/D16 に変わるが、このスケッチは
- * 先頭の PWMMIN_REQUIRE_DEFAULT() で Default 以外をコンパイルエラーにしてある。
+ * どのピンが TIM2 かは版で違うので、pwmPinIsTim2() に聞く。
+ * 呼ぶ前に pwmPinOk() で PWM ピンであることを確かめてあるので、
+ * TIM2 でなければ TIM1。
  */
 static void pwmSetFreq(uint8_t pin, uint32_t hz) {
-  if (pin == 2) Pwm_freq_TIM2(hz);
-  else          Pwm_freq_TIM1(hz);
+  if (pwmPinIsTim2(pin)) Pwm_freq_TIM2(hz);
+  else                   Pwm_freq_TIM1(hz);
 }
 
 // ── 距離計 (HC-SR04) ────────────────────────────────────────────────────────
@@ -570,6 +611,13 @@ static void doSerial(uint8_t cmd, const uint8_t *buf) {
       rsp_err();
       return;
     }
+#ifdef PWMMIN_TIM2_REMAP3
+    // Remap3 版では D15 / D16 も PWM を出せる。出したまま begin すると、
+    // TIM2 のチャンネルが生きたままピンを USART1 に渡すことになる。先に止める。
+    // HID 版の D15 / D16 は PWM を出せないので要らない。
+    Pwm_stop(PIN_UART_TX);
+    Pwm_stop(PIN_UART_RX);
+#endif
     uart.begin(baud);
     serialOpen = true;
     notifyArmed = true;
@@ -1135,7 +1183,26 @@ void loop() {
       // タイマーが回りっぱなしになる。PWM 中でないピンでは何も起きない。
       Pwm_stop(pin);
       // Scratch 側メニューの値: 0=入力 1=出力 2=入力(プルアップ)
-      pinMode(pin, val == 0 ? INPUT : (val == 2 ? INPUT_PULLUP : OUTPUT));
+      //
+      // 出力にするときは、切り替える前に Low を書いておく。
+      //
+      // pinMode(OUTPUT) はピンの設定 (CFGLR) だけを書き換え、出力する値 (OUTDR) には
+      // 触れない (arduino_core_ch32 の ch32v00x_gpio.c、GPIO_Init)。前に「入力(プルアップ)」
+      // や「出力を 1 にする」を使っていると OUTDR が 1 のまま残り、出力にした瞬間に
+      // High が出る。実機で LED が点いた (D3 と D5 で確認、2026-09-27)。利用者から見ると
+      // 「出力にしただけで点いた」で、理由の手掛かりがどこにも無い。
+      //
+      // 先に書くのは、出力にしてから書くと一瞬 High が出るため。
+      // 入力のまま OUTDR を 0 にすると、入力(プルアップ) だったピンはその間だけ
+      // プルダウンに変わるが、すぐに出力へ切り替わるので害はない。
+      if (val == 0) {
+        pinMode(pin, INPUT);
+      } else if (val == 2) {
+        pinMode(pin, INPUT_PULLUP);
+      } else {
+        digitalWrite(pin, LOW);
+        pinMode(pin, OUTPUT);
+      }
       rsp_ok();
       break;
 
@@ -1169,7 +1236,7 @@ void loop() {
       // 周波数 0 を弾く。Pwm_freq_TIM*() は 0 を渡されると何もせずに戻るので、
       // 直前の周波数のまま出てしまう。黙って別の周波数で出すより失敗させる。
       //
-      // ピンの方は、Scratch 側メニューが PWM を出せる 5 本しか並べていないが、
+      // ピンの方は、Scratch 側メニューが PWM を出せるピンしか並べていないが、
       // メニューは acceptReporters なので変数からどんな番号でも入ってくる。
       // 黙ってデジタル出力にフォールバックせず、はっきり失敗させる。
       if (!pwmPinOk(pin) || hz == 0) {

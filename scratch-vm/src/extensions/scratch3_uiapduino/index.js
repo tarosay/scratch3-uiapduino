@@ -21,14 +21,18 @@ import UiapduinoProcessor, {
     CMD, MOUSE_BUTTON, REASON, PROTOCOL_VERSION, SKETCH_VARIANT, DEVICE_FILTER
 } from './uiapduinoProcessor';
 
-// 「スケッチを書き込む」ブロックの中身。どちらも書き込みのときにしか使わない。
-//
+// 「スケッチを書き込む」ブロックの中身。書き込みのときにしか使わない。
 // rv003usbFlasher は第三者のコード (MIT)。あちらの冒頭を読むこと。
-// sketchBin は embed-bin.mjs の生成物で、手で書かない。
 import rv003usbFlasher from './rv003usbFlasher';
+
+// 版ごとに違う値 (HID 版 / Remap3 版)。このファイルは両方の版で同じもので、
+// 版の分岐は書かない。違いは全部 variant.js にある (冒頭のコメントを読むこと)。
+// 同梱の .bin もそこから来る。中身は embed-bin.mjs の生成物。
 import {
+    EXTENSION_ID, EXTENSION_URL, EXTENSION_NAME, EXTENSION_COLORS, MENU_ICON_URI,
+    PWM_PIN_ITEMS, PWM_DEFAULT_PIN,
     SKETCH_BIN_BASE64, SKETCH_BIN_SIZE, SKETCH_BIN_PROTOCOL_VERSION
-} from './sketchBin';
+} from './variant';
 
 /**
  * 表示中の言語を知るための formatMessage。
@@ -45,15 +49,6 @@ import {
 let formatMessage = defaultFormatMessage;
 
 /**
- * 拡張機能 ID。
- *
- * getInfo() の id、Peripheral Extension API への登録、接続喪失イベントの payload で
- * 同じ値を使う。ここがずれるとステータスボタンが別拡張を見に行く。
- * @type {string}
- */
-const EXTENSION_ID = 'uiapduino';
-
-/**
  * Xcratch にモジュールとして読み込ませたときの、このモジュール自身の URL。
  *
  * Xcratch は読み込み時に実際の URL をここへ書き込み、プロジェクトにも保存する。
@@ -67,10 +62,11 @@ const EXTENSION_ID = 'uiapduino';
  *   入れていない。中の構成を変えても、成果物をこの置き場へ持ってくれば URL は動かない。
  *   実体は docs/uiapduino.mjs で、GitHub Pages の公開元を /docs にしてある。
  *
+ *   値は版ごとに違うので variant.js が持つ。
  *   xcratch/src/gui/.../entry/index.jsx の extensionURL と必ず同じ値にすること。
  * @type {string}
  */
-let extensionURL = 'https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs';
+let extensionURL = EXTENSION_URL;
 
 /**
  * ブロック左端に表示するアイコン (data URI)。
@@ -128,10 +124,13 @@ const flashIconURI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYA
 
 /**
  * ブロックパレットのカテゴリ見出しに表示するアイコン (data URI)。
- * ブロック左端と同じ絵でよいので使い回す。
+ *
+ * 版ごとの絵があればそれを使う (variant.js の MENU_ICON_URI)。Remap3 版は
+ * 一覧で HID 版と見分けられるように別の絵を持っている。
+ * 無ければブロック左端と同じ絵でよいので使い回す (HID 版)。
  * @type {string}
  */
-const menuIconURI = blockIconURI;
+const menuIconURI = MENU_ICON_URI || blockIconURI;
 
 /**
  * `KEY_TEXT` の 1 コマンドに載せられる文字数。
@@ -210,31 +209,6 @@ const KEY_MENU_ITEMS = [
     keyItem('CapsLock', 0xC1),
     keyItem('NumLock', 0xDB),
     keyItem('PrintScreen', 0xCE)
-];
-
-/**
- * 「サーボ [ ] を [ ] 度にする」のピンのメニュー。
- *
- * PWM を出せる 5 本だけを並べる。Tools → PWM = TIM2 Default のときの
- * TIM1 = D0 / D5 / D6 / D12、TIM2 = D2 がそれにあたる。
- * 数値入力にしていないのは、サーボの繋がらないピンを選べてしまうため。
- *
- * ⚠ 表記と値が食い違って見えるが、間違いではない。
- *   基板のシルクは PA1 = A1、PC4 = A2、PD2 = A3 で、Arduino 番号は 0 / 6 / 12。
- *   基板に書いてある名前で選ばせ、デバイスへは Arduino 番号を送る。
- *
- *   この A1 / A2 / A3 は「A1 の値」のアナログ入力ブロックと同じ物理ピンを指す
- *   (ADC のチャンネル 1 / 2 / 3 が PA1 / PC4 / PD2)。表記は揃っている。
- *
- * D2 はオンボード LED でもあるので、繋がなくても動きが確かめられる。既定値にしてある。
- * @type {Array<{text: string, value: string}>}
- */
-const SERVO_PIN_ITEMS = [
-    {text: '2', value: '2'},
-    {text: '5', value: '5'},
-    {text: 'A1', value: '0'},
-    {text: 'A2', value: '6'},
-    {text: 'A3', value: '12'}
 ];
 
 /**
@@ -533,11 +507,17 @@ const RECONNECT_TRIES = 20;
  * CH32V003 では D13 = USB D+ / D14 = USB D- / D17 = RESET で、触ると USB が落ちる。
  * デバイス側スケッチが弾いて RSP_ERR を返すので害はないが、既定値には使えない。
  *
- *   D2  オンボード LED。TIM2 (PWM) でもあるので出力系の既定値はここに揃える
+ *   D2  オンボード LED。デジタル出力の既定値
  *   D3  空きピン。入力系の既定値
  *   A0  PA2 (= D1)。アナログ入力の既定値
  *
- * PWM を出せるのは Tools → PWM = TIM2 Default のとき D0 / D2 / D5 / D6 / D12 のみ。
+ * PWM を出すブロック (アナログ出力とサーボ) の既定値は版で違うので、
+ * variant.js の PWM_DEFAULT_PIN が持つ。HID 版は D2 (LED で確かめられる)、
+ * Remap3 版は D2 が PWM を出せないので D5。
+ *
+ * PWM を出せるピンも版で違う (variant.js の PWM_PIN_ITEMS)。
+ *   HID 版     D0 / D2 / D5 / D6 / D12
+ *   Remap3 版  D0 / D3 / D5 / D6 / D9 / D12 / D15 / D16
  */
 const message = {
     // WebHID を持たないブラウザで開かれたときに、パレットの先頭へ出す 1 行。
@@ -1465,7 +1445,7 @@ class Scratch3Uiapduino {
             // Xcratch がプロジェクトに保存する読み込み元。
             // scratch-vm 0.2.0 (デスクトップ版) はこの項目を見ないので影響しない。
             extensionURL: extensionURL,
-            name: 'UIAPduino',
+            name: EXTENSION_NAME,
             menuIconURI: menuIconURI,
             blockIconURI: blockIconURI,
             // カテゴリ見出しに接続状態ボタンを出す。未接続なら「!」になる。
@@ -1537,7 +1517,7 @@ class Scratch3Uiapduino {
                     arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: 2
+                            defaultValue: PWM_DEFAULT_PIN
                         },
                         VALUE: {
                             type: ArgumentType.NUMBER,
@@ -1589,15 +1569,15 @@ class Scratch3Uiapduino {
                     // duty 6-31 という数を利用者が知らなければならず、
                     // しかもその数は周波数を変えると意味が変わる。
                     //
-                    // ⚠ 出せるのは PWM 対応の 5 本だけ。数値入力ではなくメニューにしてある。
-                    //   詳細は SERVO_PIN_ITEMS のコメント。
+                    // ⚠ 出せるのは PWM 対応のピンだけ。数値入力ではなくメニューにしてある。
+                    //   ピンは版で違う。詳細は variant.js の PWM_PIN_ITEMS のコメント。
                     opcode: 'servo',
                     text: this._getText('servo'),
                     blockType: BlockType.COMMAND,
                     arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: 2,
+                            defaultValue: PWM_DEFAULT_PIN,
                             menu: 'SERVO_PIN'
                         },
                         // ArgumentType.ANGLE は使わない。あれは「向き」を選ぶ
@@ -2252,13 +2232,16 @@ class Scratch3Uiapduino {
                         {text: this._getText('off'), value: '0'}
                     ]
                 },
-                // 表記は基板のシルク、値は Arduino 番号 (SERVO_PIN_ITEMS を見ること)。
+                // 表記は基板のシルク、値は Arduino 番号 (variant.js の PWM_PIN_ITEMS を見ること)。
                 //
                 // acceptReporters を true にしてあるので、変数からメニューに無い
                 // 番号も入ってくる。デバイス側が PWM 非対応ピンを RSP_ERR で弾く。
+                //
+                // メニューの名前は SERVO_PIN のまま。保存済みのプロジェクトが
+                // この名前でメニューを引くため、変えると古い作品のブロックが壊れる。
                 SERVO_PIN: {
                     acceptReporters: true,
-                    items: SERVO_PIN_ITEMS
+                    items: PWM_PIN_ITEMS
                 },
                 // 値は arduino_core_ch32 の Keyboard.h の定数 (KEY_MENU_ITEMS を見ること)
                 KEY: {
@@ -2403,6 +2386,13 @@ class Scratch3Uiapduino {
             // 引数もメニューも持たないブロックなので、menus を空にしても出せる。
             info.blocks.push('---', ...this._flashBlocks());
             info.menus = {};
+        }
+
+        // ブロックの色は版ごとに決まる (variant.js の EXTENSION_COLORS)。
+        // 無ければ何も足さず、scratch-vm の既定の緑になる。
+        // 説明ブロックに差し替えたときも同じ色にしておく。どの拡張機能の説明かが色で分かる。
+        if (EXTENSION_COLORS) {
+            [info.color1, info.color2, info.color3] = EXTENSION_COLORS;
         }
 
         return info;

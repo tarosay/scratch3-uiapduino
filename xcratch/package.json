@@ -2,7 +2,6 @@
   "name": "xcx-uiapduino",
   "version": "0.2.5",
   "description": "UIAPduino extension for Xcratch",
-  "extensionId": "uiapduino",
   "license": "BSD-3-Clause",
   "scripts": {
     "setup-dev": "node ./scripts/setup-dev.mjs",

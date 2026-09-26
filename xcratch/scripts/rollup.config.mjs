@@ -6,7 +6,6 @@
 // multi-entry で 2 つの入口を束ねるのがその作り方。
 
 import path from 'path';
-import fs from 'fs-extra';
 
 import babel from '@rollup/plugin-babel';
 import commonjs from '@rollup/plugin-commonjs';
@@ -15,23 +14,23 @@ import nodePolyfills from 'rollup-plugin-polyfill-node';
 import importImage from '@rollup/plugin-image';
 import multi from '@rollup/plugin-multi-entry';
 import json from '@rollup/plugin-json';
+import {BUILDS} from './builds.mjs';
 
-const packageJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), './package.json'), 'utf-8'));
-const EXTENSION_ID = packageJson.extensionId;
-if (!EXTENSION_ID) {
-    console.error('package.json に extensionId がありません');
-    process.exit(1);
-}
-
-// src/vm/extensions/block の中身は sync-block.mjs が置いた複製。
+// 版 (HID 版 / Remap3 版) ごとに 1 枚ずつ作る。一覧は builds.mjs。
+//
+// src/vm/extensions/<blockDir> の中身は sync-block.mjs が置いた複製。
 // 実体はこのリポジトリの scratch-vm/src/extensions/scratch3_uiapduino で、
-// デスクトップ版とまったく同じファイルをビルドしている。
-const blockFile = path.resolve(process.cwd(), './src/vm/extensions/block/index.js');
-const entryFile = path.resolve(process.cwd(), './src/gui/lib/libraries/extensions/entry/index.jsx');
-const moduleFile = path.resolve(process.cwd(), './dist', `${EXTENSION_ID}.mjs`);
-
-export default {
-    input: [entryFile, blockFile],
+// デスクトップ版とまったく同じファイルをビルドしている。版で違うのは variant.js だけ。
+/**
+ * 1 つの版の rollup 設定を作る。
+ * @param {import('./builds.mjs').Build} build - 版
+ * @returns {object} rollup の設定
+ */
+const makeConfig = build => ({
+    input: [
+        path.resolve(process.cwd(), './src/gui/lib/libraries/extensions', build.entryDir, 'index.jsx'),
+        path.resolve(process.cwd(), './src/vm/extensions', build.blockDir, 'index.js')
+    ],
     context: 'window',
     plugins: [
         multi(),
@@ -62,7 +61,7 @@ export default {
         })
     ],
     output: {
-        file: moduleFile,
+        file: path.resolve(process.cwd(), './dist', `${build.name}.mjs`),
         format: 'es',
         sourcemap: true
     },
@@ -72,4 +71,6 @@ export default {
         buildDelay: 500
     },
     external: []
-};
+});
+
+export default BUILDS.map(makeConfig);

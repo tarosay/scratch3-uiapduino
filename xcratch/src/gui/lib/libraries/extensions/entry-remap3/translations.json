@@ -1,0 +1,17 @@
+{
+  "en": {
+    "uiapduinoRemap3.entry.name": "UIAPduino Remap3",
+    "uiapduinoRemap3.entry.description": "UIAPduino with 8 PWM pins. Chrome or Edge is required to connect to UIAPduino.",
+    "uiapduinoRemap3.entry.connectingMessage": "Connecting to UIAPduino"
+  },
+  "ja": {
+    "uiapduinoRemap3.entry.name": "UIAPduino Remap3",
+    "uiapduinoRemap3.entry.description": "PWM を 8 本出せる版です。UIAPduino につなぐには Chrome か Edge が必要です。",
+    "uiapduinoRemap3.entry.connectingMessage": "UIAPduinoに接続中"
+  },
+  "ja-Hira": {
+    "uiapduinoRemap3.entry.name": "UIAPduino Remap3",
+    "uiapduinoRemap3.entry.description": "PWM を 8ほん だせる はんです。UIAPduino に つなぐには Chrome か Edge が ひつようです。",
+    "uiapduinoRemap3.entry.connectingMessage": "UIAPduinoにせつぞくちゅう"
+  }
+}
