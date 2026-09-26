@@ -21,8 +21,7 @@ import insetIconURL from '../../../../../../../scratch-gui/src/lib/libraries/ext
 const entry = createEntry({
     // scratch-vm/src/extensions/scratch3_uiapduino/variantRemap3.js の EXTENSION_ID と同じ値
     extensionId: 'uiapduinoRemap3',
-    // 同じく EXTENSION_URL と同じ値。
-    // ⚠ まだ公開していない。名前が決まったら、公開する前に両方を直すこと
+    // 同じく EXTENSION_URL と同じ値。⚠ 公開したら二度と変えられない
     extensionURL: 'https://tarosay.github.io/scratch3-uiapduino/uiapduino-remap3.mjs',
     name: 'UIAPduino Remap3',
     description: 'UIAPduino with 8 PWM pins. Chrome or Edge is required to connect to UIAPduino.',

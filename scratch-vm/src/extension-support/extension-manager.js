@@ -18,6 +18,9 @@ const builtinExtensions = {
     // ここで受けた値は new extension(runtime) されるため、付け忘れると
     // 「extension is not a constructor」で落ちる。
     uiapduino: () => require('../extensions/scratch3_uiapduino').default,
+    // Remap3 版 (PWM 8 本)。HID 版のクラスを受け継ぎ、版の値だけを差し替えたもの。
+    // キーは scratch3_uiapduino/variantRemap3.js の EXTENSION_ID と同じにすること。
+    uiapduinoRemap3: () => require('../extensions/scratch3_uiapduino/remap3').default,
     pen: () => require('../extensions/scratch3_pen'),
     wedo2: () => require('../extensions/scratch3_wedo2'),
     music: () => require('../extensions/scratch3_music'),

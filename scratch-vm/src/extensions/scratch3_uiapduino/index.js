@@ -18,7 +18,7 @@ import Cast from '../../util/cast';
 import defaultFormatMessage from 'format-message';
 
 import UiapduinoProcessor, {
-    CMD, MOUSE_BUTTON, REASON, PROTOCOL_VERSION, SKETCH_VARIANT, DEVICE_FILTER
+    CMD, MOUSE_BUTTON, REASON, PROTOCOL_VERSION, DEVICE_FILTER
 } from './uiapduinoProcessor';
 
 // 「スケッチを書き込む」ブロックの中身。書き込みのときにしか使わない。
@@ -26,13 +26,13 @@ import UiapduinoProcessor, {
 import rv003usbFlasher from './rv003usbFlasher';
 
 // 版ごとに違う値 (HID 版 / Remap3 版)。このファイルは両方の版で同じもので、
-// 版の分岐は書かない。違いは全部 variant.js にある (冒頭のコメントを読むこと)。
+// 版の分岐は書かない。違いは全部 variant*.js にある (variant.js の冒頭を読むこと)。
 // 同梱の .bin もそこから来る。中身は embed-bin.mjs の生成物。
-import {
-    EXTENSION_ID, EXTENSION_URL, EXTENSION_NAME, EXTENSION_COLORS, MENU_ICON_URI,
-    PWM_PIN_ITEMS, PWM_DEFAULT_PIN,
-    SKETCH_BIN_BASE64, SKETCH_BIN_SIZE, SKETCH_BIN_PROTOCOL_VERSION
-} from './variant';
+//
+// ここで読むのは HID 版の値だけ。クラスの static get variant() が返し、
+// 本体はいつも this.variant から値を取る。Remap3 版は remap3.js で
+// variant() を上書きしたサブクラスとして作る。
+import * as hidVariant from './variant';
 
 /**
  * 表示中の言語を知るための formatMessage。
@@ -47,26 +47,6 @@ import {
  * @type {Function}
  */
 let formatMessage = defaultFormatMessage;
-
-/**
- * Xcratch にモジュールとして読み込ませたときの、このモジュール自身の URL。
- *
- * Xcratch は読み込み時に実際の URL をここへ書き込み、プロジェクトにも保存する。
- * 次にそのプロジェクトを開いたとき、この URL から拡張を読み直す。
- * ここに書いてある値は、書き込まれなかった場合の保険。
- *
- * ⚠ この URL は公開したら二度と変えられない。保存されたプロジェクトが
- *   ここから拡張機能を読み直すため、変えると古い作品が開けなくなる。
- *
- *   だから「それが何か」だけで組み立ててある。ビルドの都合 (xcratch/ や dist/) は
- *   入れていない。中の構成を変えても、成果物をこの置き場へ持ってくれば URL は動かない。
- *   実体は docs/uiapduino.mjs で、GitHub Pages の公開元を /docs にしてある。
- *
- *   値は版ごとに違うので variant.js が持つ。
- *   xcratch/src/gui/.../entry/index.jsx の extensionURL と必ず同じ値にすること。
- * @type {string}
- */
-let extensionURL = EXTENSION_URL;
 
 /**
  * ブロック左端に表示するアイコン (data URI)。
@@ -122,15 +102,8 @@ const mouseIconURI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYA
 // eslint-disable-next-line max-len
 const flashIconURI = 'data:image/png;base64,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';
 
-/**
- * ブロックパレットのカテゴリ見出しに表示するアイコン (data URI)。
- *
- * 版ごとの絵があればそれを使う (variant.js の MENU_ICON_URI)。Remap3 版は
- * 一覧で HID 版と見分けられるように別の絵を持っている。
- * 無ければブロック左端と同じ絵でよいので使い回す (HID 版)。
- * @type {string}
- */
-const menuIconURI = MENU_ICON_URI || blockIconURI;
+// ブロックパレットのカテゴリ見出しに表示するアイコンは版ごとに違うので、
+// getInfo() で決める (this.variant.MENU_ICON_URI、無ければ blockIconURI)。
 
 /**
  * `KEY_TEXT` の 1 コマンドに載せられる文字数。
@@ -1036,18 +1009,46 @@ class Scratch3Uiapduino {
     }
 
     /**
+     * この拡張機能の版の値 (ID・URL・名前・色・PWM のピン・同梱の .bin など)。
+     *
+     * このクラスは HID 版で、variant.js の値を返す。Remap3 版は remap3.js で
+     * これを上書きしたサブクラスとして作り、variantRemap3.js の値を返す。
+     * 本体は版の値をいつも this.variant (static では this.variant) から取る。
+     *
+     * ⚠ ファイルの先頭で版の値を import して直接使わないこと。
+     *   デスクトップ版は 1 つのアプリに HID 版と Remap3 版を同時に入れるので、
+     *   ファイルで決め打ちにすると、片方の版がもう片方の値で動いてしまう。
+     * @returns {object} variant*.js の中身
+     */
+    static get variant () {
+        return hidVariant;
+    }
+
+    /**
      * Xcratch がモジュール読み込み時に、実際に読み込んだ URL を書き込む。
      * getInfo() で返すと、プロジェクトに「どこから読めばよいか」が残る。
      * デスクトップ版では拡張が組み込みなので、この値は使われない。
+     *
+     * 版ごとのクラスに自分の値として持たせる。サブクラスは親の static を
+     * 引き継ぐので、hasOwnProperty で自分に書かれたものだけを見る。
      * @param {string} url - このモジュールの URL
      */
     static set extensionURL (url) {
-        if (url) extensionURL = url;
+        if (url) this._extensionURL = url;
     }
 
-    /** @returns {string} このモジュールの URL */
+    /**
+     * このモジュールの URL。書き込まれていなければ版の既定値 (variant*.js の EXTENSION_URL)。
+     *
+     * ⚠ 既定値の URL は公開したら二度と変えられない。保存されたプロジェクトが
+     *   ここから拡張機能を読み直すため、変えると古い作品が開けなくなる。
+     *   詳しくは variant.js の EXTENSION_URL。
+     * @returns {string} このモジュールの URL
+     */
     static get extensionURL () {
-        return extensionURL;
+        return Object.prototype.hasOwnProperty.call(this, '_extensionURL') ?
+            this._extensionURL :
+            this.variant.EXTENSION_URL;
     }
 
     constructor (runtime) {
@@ -1057,13 +1058,19 @@ class Scratch3Uiapduino {
          */
         this.runtime = runtime;
 
+        /**
+         * この拡張機能の版の値。static get variant() を参照。
+         * @type {object}
+         */
+        this.variant = this.constructor.variant;
+
         // Xcratch の runtime は自分の formatMessage を持っている。
         // scratch-vm 0.2.0 (デスクトップ版) は持っていないので、そのままになる。
         if (runtime.formatMessage) {
             formatMessage = runtime.formatMessage;
         }
 
-        this.processor = new UiapduinoProcessor();
+        this.processor = new UiapduinoProcessor(this.variant.SKETCH_VARIANT);
 
         /**
          * Scratch へ PERIPHERAL_CONNECTED を送った後かどうか。
@@ -1314,7 +1321,7 @@ class Scratch3Uiapduino {
         }
 
         // ステータスボタンと接続モーダルはこの登録が無いと動かない。
-        this.runtime.registerPeripheralExtension(EXTENSION_ID, this);
+        this.runtime.registerPeripheralExtension(this.variant.EXTENSION_ID, this);
     }
 
     /**
@@ -1416,7 +1423,7 @@ class Scratch3Uiapduino {
                 // なく、実際に焼かれるものの番号でなければ意味がない。
                 // (2 つが食い違っていたら flashSketch() が焼かずに止める)
                 text: this._getText('flashSketch')
-                    .replace('{version}', SKETCH_BIN_PROTOCOL_VERSION),
+                    .replace('{version}', this.variant.SKETCH_BIN_PROTOCOL_VERSION),
                 blockType: BlockType.BOOLEAN,
                 blockIconURI: flashIconURI
             },
@@ -1441,12 +1448,12 @@ class Scratch3Uiapduino {
         }
 
         const info = {
-            id: EXTENSION_ID,
+            id: this.variant.EXTENSION_ID,
             // Xcratch がプロジェクトに保存する読み込み元。
             // scratch-vm 0.2.0 (デスクトップ版) はこの項目を見ないので影響しない。
-            extensionURL: extensionURL,
-            name: EXTENSION_NAME,
-            menuIconURI: menuIconURI,
+            extensionURL: this.constructor.extensionURL,
+            name: this.variant.EXTENSION_NAME,
+            menuIconURI: this.variant.MENU_ICON_URI || blockIconURI,
             blockIconURI: blockIconURI,
             // カテゴリ見出しに接続状態ボタンを出す。未接続なら「!」になる。
             showStatusButton: true,
@@ -1517,7 +1524,7 @@ class Scratch3Uiapduino {
                     arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: PWM_DEFAULT_PIN
+                            defaultValue: this.variant.PWM_DEFAULT_PIN
                         },
                         VALUE: {
                             type: ArgumentType.NUMBER,
@@ -1577,7 +1584,7 @@ class Scratch3Uiapduino {
                     arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: PWM_DEFAULT_PIN,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
                             menu: 'SERVO_PIN'
                         },
                         // ArgumentType.ANGLE は使わない。あれは「向き」を選ぶ
@@ -2241,7 +2248,7 @@ class Scratch3Uiapduino {
                 // この名前でメニューを引くため、変えると古い作品のブロックが壊れる。
                 SERVO_PIN: {
                     acceptReporters: true,
-                    items: PWM_PIN_ITEMS
+                    items: this.variant.PWM_PIN_ITEMS
                 },
                 // 値は arduino_core_ch32 の Keyboard.h の定数 (KEY_MENU_ITEMS を見ること)
                 KEY: {
@@ -2368,7 +2375,7 @@ class Scratch3Uiapduino {
                 // 直すのに要るのは「何を焼けばよいか」であって、今何が焼かれて
                 // いるかではない。基板側の番号はコンソールに出ている。
                 variant ?
-                    `${this._getText('sketchVariantLabel')}: ${SKETCH_VARIANT}` :
+                    `${this._getText('sketchVariantLabel')}: ${this.variant.SKETCH_VARIANT}` :
                     `${this._getText('sketchProtocolLabel')}: ${PROTOCOL_VERSION}`
             ].map((text, i) => ({
                 opcode: `sketchProblem${i}`,
@@ -2391,8 +2398,8 @@ class Scratch3Uiapduino {
         // ブロックの色は版ごとに決まる (variant.js の EXTENSION_COLORS)。
         // 無ければ何も足さず、scratch-vm の既定の緑になる。
         // 説明ブロックに差し替えたときも同じ色にしておく。どの拡張機能の説明かが色で分かる。
-        if (EXTENSION_COLORS) {
-            [info.color1, info.color2, info.color3] = EXTENSION_COLORS;
+        if (this.variant.EXTENSION_COLORS) {
+            [info.color1, info.color2, info.color3] = this.variant.EXTENSION_COLORS;
         }
 
         return info;
@@ -2504,10 +2511,10 @@ class Scratch3Uiapduino {
         // 同梱スケッチと拡張機能が食い違っていたら、焼いても繋がらない。
         // 焼いた後に「まだ合いません」と言われるのがいちばん分からないので、
         // 焼く前に止める。起きるのは .bin を作り直し忘れたときだけ。
-        if (SKETCH_BIN_PROTOCOL_VERSION !== PROTOCOL_VERSION) {
+        if (this.variant.SKETCH_BIN_PROTOCOL_VERSION !== PROTOCOL_VERSION) {
             console.error(
                 '[uiapduino] the embedded sketch does not match this extension: ' +
-                `bin=${SKETCH_BIN_PROTOCOL_VERSION} extension=${PROTOCOL_VERSION}. ` +
+                `bin=${this.variant.SKETCH_BIN_PROTOCOL_VERSION} extension=${PROTOCOL_VERSION}. ` +
                 'Run `node ./scripts/embed-bin.mjs` after rebuilding the .bin.');
             this._setFlashState('flashFailed', null);
             return false;
@@ -2545,16 +2552,16 @@ class Scratch3Uiapduino {
     _sketchBin () {
         if (this._sketchBinCache) return this._sketchBinCache;
 
-        const raw = atob(SKETCH_BIN_BASE64);
+        const raw = atob(this.variant.SKETCH_BIN_BASE64);
         const bin = new Uint8Array(raw.length);
         for (let i = 0; i < raw.length; i++) {
             bin[i] = raw.charCodeAt(i);
         }
         // 生成物が壊れていないかの確認。ここで気づかないと、
         // 壊れたものを基板へ流し込むことになる。
-        if (bin.length !== SKETCH_BIN_SIZE) {
+        if (bin.length !== this.variant.SKETCH_BIN_SIZE) {
             throw new Error(
-                `embedded sketch is broken: ${bin.length} bytes, expected ${SKETCH_BIN_SIZE}`);
+                `embedded sketch is broken: ${bin.length} bytes, expected ${this.variant.SKETCH_BIN_SIZE}`);
         }
         this._sketchBinCache = bin;
         return bin;
@@ -2875,7 +2882,7 @@ class Scratch3Uiapduino {
         if (!this._emitDisconnected()) return;
         this.runtime.emit(this.runtime.constructor.PERIPHERAL_CONNECTION_LOST_ERROR, {
             message: 'Scratch lost connection to',
-            extensionId: EXTENSION_ID
+            extensionId: this.variant.EXTENSION_ID
         });
     }
 

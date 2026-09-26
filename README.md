@@ -129,7 +129,7 @@ Google Chrome 151.0.7922.137 (x86_64)
 | Xcratch 版の非対応ブラウザ | WebHID の無いブラウザでは説明 3 行だけを出す。**Firefox で確認済み** |
 | Xcratch 版の抜線 | 押しっぱなしの解除はブラウザではできないが、**実機では問題にならなかった** |
 | プロジェクトの相互運用 | Xcratch で保存した `.sb3` をデスクトップ版で開けることを確認済み |
-| スケッチの版の照合 | PING の上位バイトで名乗る。版は HID 版 (0) と Remap3 版 (1)。**Remap3 版は Xcratch と実機で 8 本すべての PWM 出力を確認済み** |
+| スケッチの版の照合 | PING の上位バイトで名乗る。版は HID 版 (0) と Remap3 版 (1)。**Remap3 版は Xcratch と実機で 8 本すべての PWM 出力を確認済み。デスクトップ版の Remap3 版も実機で確認済み** |
 
 **ピン操作のブロックは実機で確認済みです。** そのほか以下も確認しています。
 
@@ -198,15 +198,16 @@ Google Chrome 151.0.7922.137 (x86_64)
 | `scratch-vm/src/extensions/scratch3_uiapduino/index.js` | ブロック定義。通信方式を一切知らない |
 | `scratch-vm/src/extensions/scratch3_uiapduino/uiapduinoProcessor.js` | WebHID 通信 + コマンドキュー |
 | `scratch-vm/src/extensions/scratch3_uiapduino/rv003usbFlasher.js` | 基板への書き込み処理。**第三者のコード (MIT)。** 下記 License を参照 |
-| `scratch-vm/src/extensions/scratch3_uiapduino/variant.js` | 版ごとに違う値（HID 版）。ID・URL・PWM のピン・同梱スケッチ |
-| `scratch-vm/src/extensions/scratch3_uiapduino/variantRemap3.js` | 同じく Remap3 版。Xcratch 版のビルドでだけ使う |
+| `scratch-vm/src/extensions/scratch3_uiapduino/remap3.js` | Remap3 版の入口。`index.js` のクラスを受け継ぎ、版の値だけを差し替える |
+| `scratch-vm/src/extensions/scratch3_uiapduino/variant.js` | 版ごとに違う値（HID 版）。ID・URL・名前・色・PWM のピン・同梱スケッチ |
+| `scratch-vm/src/extensions/scratch3_uiapduino/variantRemap3.js` | 同じく Remap3 版 |
 | `scratch-vm/src/extensions/scratch3_uiapduino/sketchBin.js` | 同梱スケッチ (base64)。**自動生成。手で書かない** |
 | `scratch-vm/src/extensions/scratch3_uiapduino/sketchBinRemap3.js` | 同じく Remap3 版。**自動生成。手で書かない** |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino.png` | 拡張機能ライブラリのカード画像 (600x372) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-small.png` | 小アイコン (80x80) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3-menu.png` | Remap3 版のカテゴリ一覧の絵 (80x80)。`variantRemap3.js` に base64 で埋め込んである |
-| `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3-small.png` | Remap3 版の Xcratch のカードの小さな絵 (80x80、背景透明)。`uiapduino-small.png` の線を `#3F51B5` にしたもの |
-| `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3.png` | Remap3 版の Xcratch のカードの絵 (600x372)。`uiapduino.png` の緑を `#3F51B5` の青に置き換えたもの |
+| `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3-small.png` | Remap3 版のカードの小さな絵 (80x80、背景透明。Xcratch 版とデスクトップ版の両方)。`uiapduino-small.png` の線を `#3F51B5` にしたもの |
+| `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3.png` | Remap3 版のカードの絵 (600x372。Xcratch 版とデスクトップ版の両方)。`uiapduino.png` の緑を `#3F51B5` の青に置き換えたもの |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/SketchWrite.png` | 書き込みブロックのアイコン (80x80) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-illustration.png` | 接続モーダル用の画像 (266x165) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/usb-hid-white.svg` | 接続バッジの USB マーク (20x20) |
@@ -225,6 +226,10 @@ Google Chrome 151.0.7922.137 (x86_64)
 
 HID 版と Remap3 版は同じ `index.js` / `uiapduinoProcessor.js` から作ります。
 版ごとに違う値は `variant.js` / `variantRemap3.js` にしか書きません。
+本体は版の値をいつも `this.variant` から取り、Remap3 版の入口 `remap3.js` は
+`index.js` のクラスを受け継いでその値だけを差し替えます。
+デスクトップ版は 1 つのアプリに両方を登録し、ライブラリに 2 枚のカードが並びます。
+Xcratch 版は版ごとに 1 枚ずつ `.mjs` を作ります。
 
 `index.js` と `uiapduinoProcessor.js` の分離は Tello 拡張と同じで、
 ブロック層は通信方式を一切知りません。プロトコルを変える場合も

@@ -4,7 +4,7 @@
 // 版ごとに違う値だけを集めたファイル。これは Remap3 版 (Tools → PWM = TIM2 Remap3)。
 //
 // 仕組みと約束は variant.js の冒頭を読むこと。
-// Xcratch 版のビルドでは sync-block.mjs がこれを variant.js という名前で置く。
+// このファイルを読むのは remap3.js (Remap3 版の入口) だけ。
 //
 // HID 版との違いは PWM を出せるピンだけ。機能は全部同じで、キーボード・マウス・
 // シリアル通信・NeoPixel・距離計もそのまま使える。
@@ -36,8 +36,8 @@ export const EXTENSION_ID = 'uiapduinoRemap3';
 /**
  * Xcratch にモジュールとして読み込ませたときの、このモジュール自身の URL。
  *
- * ⚠ 公開したら二度と変えられない。まだ公開していないので、
- *   名前が決まったら公開する前にここを直すこと。
+ * ⚠ 公開したら二度と変えられない (理由は variant.js の EXTENSION_URL)。
+ *   名前は remap3 で決めた (2026-09-27)。ID の uiapduinoRemap3 も同じ。
  *   xcratch/src/gui/.../entry-remap3/index.jsx の extensionURL と必ず同じ値にすること。
  * @type {string}
  */

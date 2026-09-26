@@ -156,8 +156,7 @@ var img = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAA
 var entry = createEntry({
   // scratch-vm/src/extensions/scratch3_uiapduino/variantRemap3.js の EXTENSION_ID と同じ値
   extensionId: 'uiapduinoRemap3',
-  // 同じく EXTENSION_URL と同じ値。
-  // ⚠ まだ公開していない。名前が決まったら、公開する前に両方を直すこと
+  // 同じく EXTENSION_URL と同じ値。⚠ 公開したら二度と変えられない
   extensionURL: 'https://tarosay.github.io/scratch3-uiapduino/uiapduino-remap3.mjs',
   name: 'UIAPduino Remap3',
   description: 'UIAPduino with 8 PWM pins. Chrome or Edge is required to connect to UIAPduino.',
@@ -165,6 +164,84 @@ var entry = createEntry({
   iconURL: img$1,
   insetIconURL: img
 });
+
+function _classCallCheck$1(a, n) {
+  if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
+}
+
+function _typeof$1(o) {
+  "@babel/helpers - typeof";
+
+  return _typeof$1 = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
+    return typeof o;
+  } : function (o) {
+    return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
+  }, _typeof$1(o);
+}
+
+function toPrimitive(t, r) {
+  if ("object" != _typeof$1(t) || !t) return t;
+  var e = t[Symbol.toPrimitive];
+  if (void 0 !== e) {
+    var i = e.call(t, r);
+    if ("object" != _typeof$1(i)) return i;
+    throw new TypeError("@@toPrimitive must return a primitive value.");
+  }
+  return (String )(t);
+}
+
+function toPropertyKey(t) {
+  var i = toPrimitive(t, "string");
+  return "symbol" == _typeof$1(i) ? i : i + "";
+}
+
+function _defineProperties$1(e, r) {
+  for (var t = 0; t < r.length; t++) {
+    var o = r[t];
+    o.enumerable = o.enumerable || false, o.configurable = true, "value" in o && (o.writable = true), Object.defineProperty(e, toPropertyKey(o.key), o);
+  }
+}
+function _createClass$1(e, r, t) {
+  return r && _defineProperties$1(e.prototype, r), t && _defineProperties$1(e, t), Object.defineProperty(e, "prototype", {
+    writable: false
+  }), e;
+}
+
+function _assertThisInitialized(e) {
+  if (void 0 === e) throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+  return e;
+}
+
+function _possibleConstructorReturn(t, e) {
+  if (e && ("object" == _typeof$1(e) || "function" == typeof e)) return e;
+  if (void 0 !== e) throw new TypeError("Derived constructors may only return object or undefined");
+  return _assertThisInitialized(t);
+}
+
+function _getPrototypeOf(t) {
+  return _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf.bind() : function (t) {
+    return t.__proto__ || Object.getPrototypeOf(t);
+  }, _getPrototypeOf(t);
+}
+
+function _setPrototypeOf(t, e) {
+  return _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function (t, e) {
+    return t.__proto__ = e, t;
+  }, _setPrototypeOf(t, e);
+}
+
+function _inherits(t, e) {
+  if ("function" != typeof e && null !== e) throw new TypeError("Super expression must either be null or a function");
+  t.prototype = Object.create(e && e.prototype, {
+    constructor: {
+      value: t,
+      writable: true,
+      configurable: true
+    }
+  }), Object.defineProperty(t, "prototype", {
+    writable: false
+  }), e && _setPrototypeOf(t, e);
+}
 
 function asyncGeneratorStep(n, t, e, r, o, a, c) {
   try {
@@ -241,48 +318,6 @@ function _nonIterableRest() {
 
 function _slicedToArray(r, e) {
   return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray$2(r, e) || _nonIterableRest();
-}
-
-function _classCallCheck$1(a, n) {
-  if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
-}
-
-function _typeof$1(o) {
-  "@babel/helpers - typeof";
-
-  return _typeof$1 = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
-    return typeof o;
-  } : function (o) {
-    return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
-  }, _typeof$1(o);
-}
-
-function toPrimitive(t, r) {
-  if ("object" != _typeof$1(t) || !t) return t;
-  var e = t[Symbol.toPrimitive];
-  if (void 0 !== e) {
-    var i = e.call(t, r);
-    if ("object" != _typeof$1(i)) return i;
-    throw new TypeError("@@toPrimitive must return a primitive value.");
-  }
-  return (String )(t);
-}
-
-function toPropertyKey(t) {
-  var i = toPrimitive(t, "string");
-  return "symbol" == _typeof$1(i) ? i : i + "";
-}
-
-function _defineProperties$1(e, r) {
-  for (var t = 0; t < r.length; t++) {
-    var o = r[t];
-    o.enumerable = o.enumerable || false, o.configurable = true, "value" in o && (o.writable = true), Object.defineProperty(e, toPropertyKey(o.key), o);
-  }
-}
-function _createClass$1(e, r, t) {
-  return r && _defineProperties$1(e.prototype, r), t && _defineProperties$1(e, t), Object.defineProperty(e, "prototype", {
-    writable: false
-  }), e;
 }
 
 function _arrayWithoutHoles(r) {
@@ -3054,168 +3089,33 @@ function requireFormatMessage () {
 var formatMessageExports = requireFormatMessage();
 var defaultFormatMessage = /*@__PURE__*/getDefaultExportFromCjs(formatMessageExports);
 
-// このファイルは xcratch/scripts/embed-bin.mjs が作る。手で直さない。
-//
-// 中身は sketches/ScratchUiapduino-remap3.ino.bin をそのまま base64 にしたもの。
-// 「スケッチを書き込む」ブロックが、これを基板の Flash へ流し込む。
-//
-// .ino を直したら、ビルドし直した .bin を sketches/ へ置いてから
-//   node ./scripts/embed-bin.mjs remap3
-// を走らせ、この生成物と docs/uiapduino-remap3.mjs を一緒にコミットすること。
-
-/**
- * 同梱している .bin (base64)。
- *
- * 1 行が長くなりすぎないように分けてあるだけで、繋げば元の 1 本に戻る。
- * @type {string}
- */
-var SKETCH_BIN_BASE64 = ['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', '9w9jaPcAiUcjAPYAEwU1/NW3kwf1/JP39w8hR2Nk9wA1Fcm/kwcAA2MV9QCTB3ACCaipR2MF9QC1R2MX', '9QCTB4ACI4D1AOG9pUdjFfUAkwewAsW/kwcAAmMV9QCTB8ACzbcTBfX9E3X1D5MH0AVj46cQjWeTh4e/', 'CgU+lRxBgoeJRyMA9gD5R22/iUcjAPYA/UdFv4lHIwD2AJMHAAJVt4lHIwD2AJMHEAJhv4lHIwD2AJMH', 'IAJxt4lHIwD2AJMHMAJBt4lHIwD2AJMHQAKVv4lHIwD2AJMHUAKlt4lHIwD2AJMHYAKxv4lHIwD2AD2/', 'iUcjAPYAkwfQAqG3iUcjAPYAkwfgAjW/iUcjAPYAkwfwAgW/iUcjAPYAkwcAAxW3iUcjAPYAkwcQAyG/', 'iUcjAPYAkwcwAzG3iUcjAPYAkwdAAwG3iUcjAPYAkwdQA9W9iUcjAPYAkwdgA+W1iUcjAPYAkwdwA/G9', 'iUcjAPYAkweAA8G9AUWCgAPDQcWTB/AHvoZjyqcAEwcQ+LqGY0XlAJMWhQHhhhMH8AdjyrcAkwcQ+D6H', 'Y8X1ABOXhQFhhyOGYcKT9vYPk4fBwqOA1wATd/cPI4HnABN29g+jgccAgoARESLKLoSyhQbMJsgywCrC', '7/DP/YJFqoQihe/wL/0SR6qHgegZx5MkFwCzBJBAk+QUAIHrGcSTJxQAswfwQJPnFwAZ5yXo4kBSRMJE', 'cQGCgJNW90EzxuYAk9X0QRWOs8aVAI2OOoVj08YAJoWBRRnMk1b0QZPV90EzxoYAFY6zxvUAjY6ihWPT', 'xgC+hQFGPsQ6xi7CKsAJPwJFMkeSRQmPN1UHABMFBTA6wA2MqTaiRwJHQb8BRW2/txcDAJOHF9QDx3HF', 'Bcf9F+X/IUYzB/UAg0UHABOHgcE+lyMAtwCFB+OWx/6FR6OL8cSCgIFH8b9RERMHIAUGxKMBAQAjAgEA', 'owIBACMDAQCjAwEAIwDhAKMAoQAjAcEAkcUJxhMFMQDvABAStzcMAJOHF1CDxnHFmcL9F+X/CoVBN6JA', 'N9UIABMFBaAxAUW8YREuhiMQoQCKhQlFBsJpP5JAAUaBRQ1FIQF5t5OHwcSDwgcAA8MXAAPFJwCDxTcA', 'A8ZHAIPGVwADx2cAk4cBwiOAVwCjgAcAI4FnAKOBpwAjgrcAo4LHACOD1wCjg+cAgoADx0HFE0X1/2mP', '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', 'gcmT9nUA/RXh0gmgwbcBAGOKAgCT0oIAnUXjiQL6E0T2/223jUb9Fv3+twQYAITLoUb9Fv3+twQIAMEE', 'hMuEQ7fW/P/9FvWMt0YEANWMhMMCRJJEIkJBAYKAAQCRRv0W/f6zxGQAGUcBAAEAhMtJvwAAAAAAAAAA', 'FANXAEUAQgBIAEkARAAwADAAMAAAAAAAMANVAEkAQQBQAGQAdQBpAG4AbwAgAEsAQgBEACsATQBvAHUA', 'cwBlACsAVwBlAGIAAAAAAAoDVQBJAEEAUAAAAAQDCQSMAQAAKgIAACoCAAAsAgAAKgIAALIBAADaAQAA', 'KgIAACoCAABEAgAAKgIAACoCAAAAAgAAKgIAACoCAACQAgAAYgIAAEYHAABIBgAATgYAAFYHAADqBgAA', '6gYAAOoGAADqBgAA6gYAAOoGAADqBgAA6gYAAOoGAADqBgAA6gYAAOoGAADqBgAAkAYAAKIGAACoBgAA', 'rgYAALQGAAC6BgAAwAYAAMYGAADMBgAA0gYAANgGAADeBgAA5AYAAJwGAADqBgAA6gYAAFQGAABgBgAA', 'bAYAAFoGAABmBgAAcgYAAHgGAAB+BgAAhAYAAIoGAACWBgAAiAcAAEAIAACcBwAAqAcAALQHAADMBwAA', 'RggAAOQHAADwBwAA2AcAAAQIAABeCAAA/gcAAGoIAAB2CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAADQIAAA6CAAAWAgAAAoIAABkCAAAcAgAAJIHAAB8CAAAfAgAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAABYIAAAuCAAAIggAAMAHAAD4BwAAUggAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAEAgAACgIAAAcCAAATAgAAPoMAADcDQAA', '5g0AAPoNAAACDgAAEA4AACQOAAA2DgAAPg4AAEgOAABYDgAAaA4AAHQOAAB8DgAAjA4AAJwOAACoDgAA', 'sA4AALgOAADADgAAyA4AAM4OAADWDgAA3g4AAOYOAADuDgAADA8AAMYYAAAYGQAAaBkAAAYaAADCFQAA', 'JhoAACoaAABWGQAAcBkAAE4aAABmGgAAbhoAAIwaAACkGgAAiB4AAK4eAAC8HgAAzB4AAMIVAADMHgAA', '4CIAAHofAACMFQAAjBUAAAwhAACMFQAA8h8AAEwgAACMFQAAjBUAAIohAACMFQAAjBUAAKggAACMFQAA', 'jBUAAGwiAAD2IQAABgD/CQGhAXUIlQgJAoECdQiVIAkDsQLABQEJBqEBdQGVCAUHGeAp5xUAJQGBApUB', 'dQiBA5UFdQEFCBkBKQWRApUBdQORA5UHdQiRA5UGdQgVACWnBQcZACmngQDAAAAABQEJAqEBCQGhAAUJ', 'GQEpAxUAJQGVA3UBgQKVAXUFgQMFAQkwCTEJOBWBJX91CJUDgQbAwAkCVAADAQCAZAkEAAABAwECAAkh', 'EAEAASI0AAcFgQMEAAoJBAEAAQMBAQAJIRABAAEiRQAHBYIDCAAKCQQCAAEDAAAACSEQAQABIhgABwWD', 'AwgAChIBEAEAAAAICRIE0AEAAQIDAQAAAAgBQAAQAUAAFAFAJAAAAAAAAEALkQAAIwAAAAAAAEALEQEA', 'EAAAAAAAAEALkQEAJwAAAAAAAEALEQIAIgAAAAAsAUALjQAAAQAAAAAsAUALDQEAEwAAAAAsAUALjQEA', 'FAAAAAAsAUALDQIAIAAAAAAsAUALjQAAAgAAAAAsAUALDQEAIQAAAAAsAUALjQEA/////wAAAAAAAAAA', 'AAEAAFwvAAASAAAAAAIAAAgvAABUAAAAACIAANQuAAA0AAAAACIBAIwuAABFAAAAACICAHQuAAAYAAAA', 'AAMAAAArAAAEAAAAAQMJBPQqAAAKAAAAAgMJBMAqAAAwAAAAAwMJBKgqAAAUAAAAAQAAAAIAAAAQAAAA', 'EQAAABIAAAATAAAAFAAAABUAAAAWAAAAFwAAACAAAAAhAAAAIgAAACMAAAAkAAAAJQAAACYAAAAnAAAA', 'AQAAAAAAAAAGAAAADAAAAA0AAAAPAAAAEAAAAA4AAAACAAAAACQBQAAAAAABAAAAACQBQACAAAAUAAAA', 'ACQBQAAAAQAiAAAAACQBQACAAQAjAAAAACQBQAAAAgAlAAAAACQBQACAAgAmAAAAACQBQAAAAwAkAAAA', 'ACQBQACAAwD/////AAAAAAAAAAABAAAAAgAAAAQAAAAIAAAAEAAAACAAAABAAAAAgAAAABQAAAAAAAAA', 'FAAAAAAAAAAUAAAAAAAAABQAAAAAAAAAFAAAAAAAAAAUAAAAAAAAABQAAAAAAAAAFAAAAAAAAAAhQCMk', 'JV4mKigpXyt7fXw6In48Pj8AAAAxMjM0NTY3ODkwLT1bXVw7J2AsLi8AAABSJgAA/////7oAugDAwPjA', 'wPj4+A=='].join('');
-
-/** @type {number} 元の .bin の大きさ (バイト)。復号できたかの確認に使う */
-var SKETCH_BIN_SIZE = 12784;
-
-/**
- * この .bin が名乗るプロトコル番号 (.ino の PROTOCOL_VERSION)。
- *
- * uiapduinoProcessor.js の PROTOCOL_VERSION と食い違っていたら、
- * .bin を作り直し忘れている。書き込みブロックはその場合に焼かずに止まる。
- * @type {number}
- */
-var SKETCH_BIN_PROTOCOL_VERSION = 8;
-
-// scratch3-uiapduino / variantRemap3.js
-// Created by tarosay (2026)
-//
-// 版ごとに違う値だけを集めたファイル。これは Remap3 版 (Tools → PWM = TIM2 Remap3)。
-//
-// 仕組みと約束は variant.js の冒頭を読むこと。
-// Xcratch 版のビルドでは sync-block.mjs がこれを variant.js という名前で置く。
-//
-// HID 版との違いは PWM を出せるピンだけ。機能は全部同じで、キーボード・マウス・
-// シリアル通信・NeoPixel・距離計もそのまま使える。
-//
-//   HID 版     TIM1 = D0 / D5 / D6 / D12   TIM2 = D2                      5 本
-//   Remap3 版  TIM1 = D0 / D5 / D6 / D12   TIM2 = D3 / D9 / D15 / D16     8 本
-//
-// ⚠ Remap3 版では D2 (オンボード LED) が PWM を出せない。点灯と消灯だけになる。
-
-
-/**
- * この拡張機能が相手にするスケッチの版。
- *
- * sketches/ScratchUiapduino を Tools → PWM = TIM2 Remap3 でビルドすると 1 を名乗る。
- * @type {number}
- */
-var SKETCH_VARIANT = 1;
-
-/**
- * 拡張機能 ID。HID 版と必ず別の値にすること (variant.js を参照)。
- * @type {string}
- */
-var EXTENSION_ID = 'uiapduinoRemap3';
-
-/**
- * Xcratch にモジュールとして読み込ませたときの、このモジュール自身の URL。
- *
- * ⚠ 公開したら二度と変えられない。まだ公開していないので、
- *   名前が決まったら公開する前にここを直すこと。
- *   xcratch/src/gui/.../entry-remap3/index.jsx の extensionURL と必ず同じ値にすること。
- * @type {string}
- */
-var EXTENSION_URL = 'https://tarosay.github.io/scratch3-uiapduino/uiapduino-remap3.mjs';
-
-/**
- * パレットのカテゴリ名。HID 版と並べたときに見分けられるようにする。
- * @type {string}
- */
-var EXTENSION_NAME = 'UIAPduino Remap3';
-
-/**
- * ブロックの色 [本体, 入力欄・メニュー, 枠線]。getInfo() の color1 / color2 / color3 になる。
- *
- * HID 版 (既定の緑) と並べたときに、パレットでもスクリプトでも見分けられるようにする。
- *
- * 本体の #3F51B5 は tarosay さんの指定。残りの 2 つはそこから作った。
- * 既定の緑 (#0FBD8C → #0DA57A → #0B8E69) と同じ比率で暗くしてある
- * (RGB をそれぞれ約 0.875 倍と 0.75 倍)。
- * @type {?Array<string>}
- */
-var EXTENSION_COLORS = ['#3F51B5', '#37479E', '#2F3D88'];
-
-/**
- * ブロックパレットのカテゴリ一覧に出す絵 (data URI)。
- *
- * ブロックの色を変えても、ここは変わらない。一覧に出るのは色ではなく絵だから
- * (scratch-vm の runtime.js: menuIconURI → blockIconURI → どちらも無ければ色の丸)。
- * HID 版と並べたときに一覧でも見分けられるように、Remap3 版だけ別の絵にしてある。
- *
- * 実体は scratch-gui 側の
- * src/lib/libraries/extensions/uiapduino/uiapduino-remap3-menu.png (80x80, 背景透明)。
- * 作り方: uiapduino-small.png の灰色の線を #3F51B5 に塗り替え (白い塗りはそのまま)、
- * 62x62 に縮めて、#3F51B5 で塗りつぶした直径 80 の丸の中央に載せた。
- * 画像を差し替えたら base64 も入れ直すこと。
- * @type {?string}
- */
-// eslint-disable-next-line max-len
-var MENU_ICON_URI = 'data:image/png;base64,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';
-
-/**
- * 「サーボ [ ] を [ ] 度にする」のピンのメニュー。
- *
- * PWM を出せる 8 本を並べる。表記の決め方は variant.js と同じで、
- * 基板のシルクで選ばせ、デバイスへは Arduino 番号を送る
- * (A1 / A2 / A3 = D0 / D6 / D12、TX / RX = D15 / D16)。
- *
- * D15 / D16 のシルクは TX / RX。tarosay さんが示したピン配置図
- * (Yuuki U. 作、2026-06-16 版) で確かめた。A5 / A6 はアナログの番号で、
- * 基板には書かれていない。
- *
- * D3 には基板上に 2.2kΩ のプルアップがある。PWM を出している間は効かないが、
- * 止めて入力に戻すと High 側へ引かれ、LED を繋いでいるとうっすら光ることがある。
- * PWMmin のスケッチ例 PWMminRemap3 はこれを理由に D3 を外しているが、ここでは並べる。
- *
- * D15 / D16 は UART の Tx / Rx と同じ足。シリアル通信を始めた後は
- * デバイスが PWM を RSP_ERR で弾く。
- * @type {Array<{text: string, value: string}>}
- */
-var PWM_PIN_ITEMS = [{
-  text: '3',
-  value: '3'
-}, {
-  text: '5',
-  value: '5'
-}, {
-  text: '9',
-  value: '9'
-}, {
-  text: 'TX',
-  value: '15'
-}, {
-  text: 'RX',
-  value: '16'
-}, {
-  text: 'A1',
-  value: '0'
-}, {
-  text: 'A2',
-  value: '6'
-}, {
-  text: 'A3',
-  value: '12'
-}];
-
-/**
- * PWM を出すブロック (アナログ出力とサーボ) の既定ピン。
- *
- * HID 版の D2 は使えない (PWM を出せない)。D5 にしてあるのは、
- * どちらの版でも PWM を出せるピンで、プルアップも UART との兼用も無いため。
- * @type {number}
- */
-var PWM_DEFAULT_PIN = 5;
-
 function _createForOfIteratorHelper$1(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray$1(r)) || e) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: true } : { done: false, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = true, u = false; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = true, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
 function _unsupportedIterableToArray$1(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$1(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0; } }
 function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+// scratch3-uiapduino / uiapduinoProcessor.js
+// Created by tarosay (2026)
+//
+// UIAPduino との USB-HID (WebHID) 通信層。
+//
+// 「1コマンド送って応答を待ってから次を送る」というキュー方式は
+// scratch3-tello の telloProcessor.js と同じ。違いは transport が
+// dgram (UDP) ではなく WebHID である点だけ。
+//
+// ブロック定義 (index.js) はこのファイルの実装を一切知らない。
+// index.js が使うのは connect() / isConnected() / request() / resetQueue() の 4 つだけで、
+// プロトコルを変更する場合もこのファイルだけを直せばよい。
+//
+// ── プロトコルの出典 ────────────────────────────────────────────────────────
+// ワイヤフォーマットは uiap-hid-web (https://tarosay.github.io/uiap-hid-web/) の
+// uiapruby.html が実機に対して使っているものに合わせてある。
+// デバイス側ライブラリ (Hid.h) が既に持っている契約なので、
+// 既存スケッチ資産と同じ経路で動く。
+//
+// ── 版について ──────────────────────────────────────────────────────────────
+// このファイルは HID 版と Remap3 版で共有している。版ごとに違う値はここに書かず、
+// 相手にするスケッチの版の番号だけを、作るときに引数で受け取る (constructor)。
+// 1 つのアプリ (デスクトップ版) に両方の版が同時に入るので、
+// ファイルの中で版を決め打ちにはできない。
 
 /**
  * WebHID デバイスフィルタ。
@@ -3279,7 +3179,8 @@ var REPORT_ID = 0;
 var PROTOCOL_VERSION = 8;
 
 /*
- * この拡張機能が相手にするスケッチの版 (SKETCH_VARIANT) は variant.js が持つ。
+ * この拡張機能が相手にするスケッチの版 (SKETCH_VARIANT) は variant*.js が持ち、
+ * index.js が UiapduinoProcessor を作るときに渡す。
  *
  * UIAPduino は Flash が 16KB しかなく、機能を全部は載せられない。
  * 派生が出る前提で、基板がどの版を焼かれているかを PING の応答の上位バイトで名乗る。
@@ -3287,9 +3188,6 @@ var PROTOCOL_VERSION = 8;
  * これが無いと、別の版が焼かれた基板に繋いだとき
  * 「プロトコルのバージョンが違います」としか言えない。本当の原因は
  * 版違いなのに、利用者は同じスケッチを書き込み直してまた失敗する。
- *
- * このファイルは両方の版で同じもの。版ごとの値は variant.js にしか書かない。
- * (import はファイルの先頭にある)
  */
 
 /**
@@ -3616,8 +3514,13 @@ var COMMAND_TIMEOUT = 3000;
  * タイムアウトが起きた時点で警告を出し、キューのクリアか再接続を促す。
  */
 var UiapduinoProcessor = /*#__PURE__*/function () {
-  function UiapduinoProcessor() {
+  /**
+   * @param {number} sketchVariant - 相手にするスケッチの版 (variant*.js の SKETCH_VARIANT)。
+   *   接続時に基板が名乗る版とこれを比べ、違えば繋がない。
+   */
+  function UiapduinoProcessor(sketchVariant) {
     _classCallCheck$1(this, UiapduinoProcessor);
+    this.sketchVariant = sketchVariant;
     this.device = null;
     this.featureReportSize = FEATURE_REPORT_SIZE;
 
@@ -4008,12 +3911,12 @@ var UiapduinoProcessor = /*#__PURE__*/function () {
               version = raw & 0xFF;
               variant = raw >> 8 & 0xFF; // 版の違いを先に見る。版が違えばコマンドの意味ごと違うので、
               // バージョン番号の一致不一致を語っても利用者の役に立たない。
-              if (!(variant !== SKETCH_VARIANT)) {
+              if (!(variant !== this.sketchVariant)) {
                 _context3.next = 6;
                 break;
               }
               found = VARIANT[variant] || "\u756A\u53F7 ".concat(variant, " \u306E\u7248");
-              want = VARIANT[SKETCH_VARIANT];
+              want = VARIANT[this.sketchVariant] || "\u756A\u53F7 ".concat(this.sketchVariant, " \u306E\u7248");
               console.error("[uiapduino] \u3053\u306E\u57FA\u677F\u306B\u306F".concat(found, "\u306E\u30B9\u30B1\u30C3\u30C1\u304C\u713C\u304B\u308C\u3066\u3044\u307E\u3059\u3002") + "\u3053\u306E\u62E1\u5F35\u6A5F\u80FD\u304C\u4F7F\u3048\u308B\u306E\u306F".concat(want, "\u3067\u3059\u3002") + 'それぞれの版に対応した拡張機能を使うか、' + reflash);
               return _context3.abrupt("return", {
                 ok: false,
@@ -5419,6 +5322,180 @@ function _rv003usb_webflasher() {
   return _rv003usb_webflasher.apply(this, arguments);
 }
 
+// このファイルは xcratch/scripts/embed-bin.mjs が作る。手で直さない。
+//
+// 中身は sketches/ScratchUiapduino.ino.bin をそのまま base64 にしたもの。
+// 「スケッチを書き込む」ブロックが、これを基板の Flash へ流し込む。
+//
+// .ino を直したら、ビルドし直した .bin を sketches/ へ置いてから
+//   node ./scripts/embed-bin.mjs
+// を走らせ、この生成物と docs/uiapduino.mjs を一緒にコミットすること。
+
+/**
+ * 同梱している .bin (base64)。
+ *
+ * 1 行が長くなりすぎないように分けてあるだけで、繋げば元の 1 本に戻る。
+ * @type {string}
+ */
+var SKETCH_BIN_BASE64$1 = ['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', '0AVj46cQjWeTh8ecCgU+lRxBgoeJRyMA9gD5R22/iUcjAPYA/UdFv4lHIwD2AJMHAAJVt4lHIwD2AJMH', 'EAJhv4lHIwD2AJMHIAJxt4lHIwD2AJMHMAJBt4lHIwD2AJMHQAKVv4lHIwD2AJMHUAKlt4lHIwD2AJMH', 'YAKxv4lHIwD2AD2/iUcjAPYAkwfQAqG3iUcjAPYAkwfgAjW/iUcjAPYAkwfwAgW/iUcjAPYAkwcAAxW3', 'iUcjAPYAkwcQAyG/iUcjAPYAkwcwAzG3iUcjAPYAkwdAAwG3iUcjAPYAkwdQA9W9iUcjAPYAkwdgA+W1', 'iUcjAPYAkwdwA/G9iUcjAPYAkweAA8G9AUWCgAPDQcWTB/AHvoZjyqcAEwcQ+LqGY0XlAJMWhQHhhhMH', '8AdjyrcAkwcQ+D6HY8X1ABOXhQFhhyOGYcKT9vYPk4fBwqOA1wATd/cPI4HnABN29g+jgccAgoARESLK', 'LoSyhQbMJsgywCrC7/CfhIJFqoQihe/w/4MSR6qHgegZx5MkFwCzBJBAk+QUAIHrGcSTJxQAswfwQJPn', 'FwAZ5yXo4kBSRMJEcQGCgJNW90EzxuYAk9X0QRWOs8aVAI2OOoVj08YAJoWBRRnMk1b0QZPV90EzxoYA', 'FY6zxvUAjY6ihWPTxgC+hQFGPsQ6xi7CKsAJPwJFMkeSRQmPN1UHABMFBTA6wA2MqTaiRwJHQb8BRW2/', 'txcDAJOHF9QDx3HFBcf9F+X/IUYzB/UAg0UHABOHgcE+lyMAtwCFB+OWx/6FR6OL8cSCgIFH8b9RERMH', 'IAUGxKMBAQAjAgEAowIBACMDAQCjAwEAIwDhAKMAoQAjAcEAkcUJxhMFMQDvABAStzcMAJOHF1CDxnHF', 'mcL9F+X/CoVBN6JAN9UIABMFBaAxAUW8YREuhiMQoQCKhQlFBsJpP5JAAUaBRQ1FIQF5t5OHwcSDwgcA', 'A8MXAAPFJwCDxTcAA8ZHAIPGVwADx2cAk4cBwiOAVwCjgAcAI4FnAKOBpwAjgrcAo4LHACOD1wCjg+cA', 'goADx0HFE0X1/2mPI4rhxCOG4cKTh8HCo4AHACOBBwCjgQcAgoBxEQVFBsDZPwlFyT+CQBFFEQHptwPH', 'QcVhEQbCSY8jiuHEIsAjhuHCk4fBwqOABwAqhDdVBwAjgQcAEwUFMKOBBwDdMiKFWT8CRJJAN7UDABMF', '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', 'iMMCRdJHYWFzACAwEEMWBjqWcQZIQoVFLY1IwghCBQUIwlG/EMOFRQzHFgY6lgzSgUVMzgzeTNK9vxCj', 'rb839QDgIQUTh0HGDEsQQRDLDY5Qy7Flk4UFuA2OhWeThwf641P2+P13k4cHBuNO9vYMT7KVDM+t2TcX', 'AkAIQxNWNQB9ipMHcPB9jbMFsEAT1pVAQQYOBlGNCMO5twEAqoYXBQAAEwWlE4lFLoZBESLAJsK3FwFA', 'k4cHQJhDtxTw//0UZY+3JAIARY+3BBAAoQSEy5jDNwMYAGEDEsSeBhPkBgSBQgnmqWKFAkFmfRaOBa6D', 'NzIBQBMCgsUZR71FEaABAKKGBYCFin0XgeazxGQAGUeEy/0VkcWNRv0W/f4BAM23noWtxf0VY5QCAEFm', 'fRYBAAAhBQWihoWKgc4FgJN2FgD9FrP2VgAFgjWOfRclzymoBYCTFvYB/YazxGQAhMsZRwWCs/ZWADWO', 'gcmT9nUA/RXh0gmgwbcBAGOKAgCT0oIAnUXjiQL6E0T2/223jUb9Fv3+twQYAITLoUb9Fv3+twQIAMEE', 'hMuEQ7fW/P/9FvWMt0YEANWMhMMCRJJEIkJBAYKAAQCRRv0W/f6zxGQAGUcBAAEAhMtJvwAAAAAAAAAA', 'FANXAEUAQgBIAEkARAAwADAAMAAAAAAAMANVAEkAQQBQAGQAdQBpAG4AbwAgAEsAQgBEACsATQBvAHUA', 'cwBlACsAVwBlAGIAAAAAAAoDVQBJAEEAUAAAAAQDCQSMAQAAsgEAACwCAACyAQAAsgEAALQBAADcAQAA', 'sgEAALIBAACyAQAAsgEAALIBAAACAgAA2gYAANwFAADiBQAA6gYAAH4GAAB+BgAAfgYAAH4GAAB+BgAA', 'fgYAAH4GAAB+BgAAfgYAAH4GAAB+BgAAfgYAAH4GAAAkBgAANgYAADwGAABCBgAASAYAAE4GAABUBgAA', 'WgYAAGAGAABmBgAAbAYAAHIGAAB4BgAAMAYAAH4GAAB+BgAA6AUAAPQFAAAABgAA7gUAAPoFAAAGBgAA', 'DAYAABIGAAAYBgAAHgYAACoGAAAcBwAA1AcAADAHAAA8BwAASAcAAGAHAADaBwAAeAcAAIQHAABsBwAA', 'mAcAAPIHAACSBwAA/gcAAAoIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAA', 'yAcAAM4HAADsBwAAngcAAPgHAAAECAAAJgcAABAIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAA', 'EAgAABAIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAA', 'EAgAABAIAAAQCAAAqgcAAMIHAAC2BwAAVAcAAIwHAADmBwAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAA', 'EAgAABAIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAAEAgAABAIAAAQCAAA', 'EAgAABAIAAAQCAAAEAgAABAIAACkBwAAvAcAALAHAADgBwAAjgwAAHANAAB6DQAAjg0AAJYNAACkDQAA', 'uA0AAMoNAADSDQAA3A0AAOwNAAD8DQAACA4AABAOAAAgDgAAMA4AADwOAABEDgAATA4AAFQOAABcDgAA', 'Yg4AAGoOAAByDgAAeg4AAIIOAACgDgAAWBgAAKoYAAD6GAAAmBkAAFQVAAC4GQAAvBkAAOgYAAACGQAA', '4BkAAPgZAAAAGgAAHhoAADYaAAAKHgAAMB4AAD4eAABOHgAAVBUAAE4eAADEIAAAQh8AAB4VAACuHgAA', 'HhUAAB4VAAC2HwAADCAAAB4VAAAeFQAAHhUAAB4VAAAeFQAAZCAAAAYA/wkBoQF1CJUICQKBAnUIlSAJ', 'A7ECwAUBCQahAXUBlQgFBxngKecVACUBgQKVAXUIgQOVBXUBBQgZASkFkQKVAXUDkQOVB3UIkQOVBnUI', 'FQAlpwUHGQApp4EAwAAAAAUBCQKhAQkBoQAFCRkBKQMVACUBlQN1AYEClQF1BYEDBQEJMAkxCTgVgSV/', 'dQiVA4EGwMAJAlQAAwEAgGQJBAAAAQMBAgAJIRABAAEiNAAHBYEDBAAKCQQBAAEDAQEACSEQAQABIkUA', 'BwWCAwgACgkEAgABAwAAAAkhEAEAASIYAAcFgwMIAAoSARABAAAACAkSBNABAAECAwEAAAAIAUAAEAFA', 'ABQBQCQAAAAAAABAC5EAACMAAAAAAABACxEBABAAAAAAAABAC5EBACcAAAAAAABACxECACIAAAAALAFA', 'C40AAAEAAAAALAFACw0BABMAAAAALAFAC40BABQAAAAALAFACw0CACAAAAAALAFAC40AAAIAAAAALAFA', 'Cw0BACEAAAAALAFAC40BAP////8AAAAAAAAAAAABAAAgLQAAEgAAAAACAADMLAAAVAAAAAAiAACYLAAA', 'NAAAAAAiAQBQLAAARQAAAAAiAgA4LAAAGAAAAAADAADkKAAABAAAAAEDCQTYKAAACgAAAAIDCQSkKAAA', 'MAAAAAMDCQSMKAAAFAAAAAEAAAACAAAAEAAAABEAAAASAAAAEwAAABQAAAAVAAAAFgAAABcAAAAgAAAA', 'IQAAACIAAAAjAAAAJAAAACUAAAAmAAAAJwAAAAEAAAAAAAAABgAAAAwAAAANAAAADwAAABAAAAAOAAAA', 'AgAAAAAkAUAAAAAAAQAAAAAkAUAAgAAAFAAAAAAkAUAAAAEAIgAAAAAkAUAAgAEAIwAAAAAkAUAAAAIA', 'JQAAAAAkAUAAgAIAJgAAAAAkAUAAAAMAJAAAAAAkAUAAgAMA/////wAAAAAAAAAAAQAAAAIAAAAEAAAA', 'CAAAABAAAAAgAAAAQAAAAIAAAAAUAAAAAAAAABQAAAAAAAAAFAAAAAAAAAAUAAAAAAAAABQAAAAAAAAA', 'FAAAAAAAAAAUAAAAAAAAABQAAAAAAAAAIUAjJCVeJiooKV8re318OiJ+PD4/AAAAMTIzNDU2Nzg5MC09', 'W11cOydgLC4vAAAANiQAAP////+6ALoAwMD4wMD4+Pg='].join('');
+
+/** @type {number} 元の .bin の大きさ (バイト)。復号できたかの確認に使う */
+var SKETCH_BIN_SIZE$1 = 12212;
+
+/**
+ * この .bin が名乗るプロトコル番号 (.ino の PROTOCOL_VERSION)。
+ *
+ * uiapduinoProcessor.js の PROTOCOL_VERSION と食い違っていたら、
+ * .bin を作り直し忘れている。書き込みブロックはその場合に焼かずに止まる。
+ * @type {number}
+ */
+var SKETCH_BIN_PROTOCOL_VERSION$1 = 8;
+
+// scratch3-uiapduino / variant.js
+// Created by tarosay (2026)
+//
+// 版ごとに違う値だけを集めたファイル。これは HID 版 (Tools → PWM = TIM2 Default)。
+//
+// ⚠ 1 つのソースから 2 つの版を作っている。index.js と uiapduinoProcessor.js は
+//   両方の版で同じもので、違いはこのファイルと同梱の .bin だけ。
+//
+//   版         値                 入口 (拡張機能のクラス)
+//   HID 版     variant.js         index.js   ← このファイル
+//   Remap3 版  variantRemap3.js   remap3.js  (index.js のクラスを受け継ぐ)
+//
+//   本体は版の値をいつも this.variant から取る。index.js のクラスの
+//   static get variant() がこのファイルを返し、remap3.js のサブクラスが
+//   それを上書きして variantRemap3.js を返す。
+//
+//   デスクトップ版は 1 つのアプリに両方の入口を登録する
+//   (extension-support/extension-manager.js)。Xcratch 版は入口ごとに
+//   1 枚ずつ .mjs を作る (xcratch/scripts/builds.mjs)。
+//
+//   ここに無い違いを本体に書き足さないこと。書くなら先にここへ値を足す。
+//   分岐が本体に散ると、片方だけ直して他方を直し忘れる。
+//
+// ⚠ 2 つのファイルは同じ名前を export すること。片方にしか無いと、
+//   その版のビルドだけが落ちる。
+
+
+/**
+ * この拡張機能が相手にするスケッチの版。
+ *
+ * sketches/ScratchUiapduino の SKETCH_VARIANT と同じ値でなければならない。
+ * 番号の意味は uiapduinoProcessor.js の VARIANT を参照。
+ * @type {number}
+ */
+var SKETCH_VARIANT$1 = 0;
+
+/**
+ * 拡張機能 ID。
+ *
+ * getInfo() の id、Peripheral Extension API への登録、接続喪失イベントの payload で
+ * 同じ値を使う。ここがずれるとステータスボタンが別拡張を見に行く。
+ *
+ * ⚠ 版ごとに必ず別の値にすること。同じにすると、片方の版で作ったプロジェクトが
+ *   もう片方の拡張機能を掴む (xcratch/README.md の「公開 URL」)。
+ * @type {string}
+ */
+var EXTENSION_ID$1 = 'uiapduino';
+
+/**
+ * Xcratch にモジュールとして読み込ませたときの、このモジュール自身の URL。
+ *
+ * Xcratch は読み込み時に実際の URL を書き込み (index.js の static set extensionURL)、
+ * プロジェクトにも保存する。次にそのプロジェクトを開いたとき、この URL から拡張を
+ * 読み直す。ここに書いてある値は、書き込まれなかった場合の保険。
+ *
+ * ⚠ この URL は公開したら二度と変えられない。保存されたプロジェクトが
+ *   ここから拡張機能を読み直すため、変えると古い作品が開けなくなる。
+ *
+ *   だから「それが何か」だけで組み立ててある。ビルドの都合 (xcratch/ や dist/) は
+ *   入れていない。中の構成を変えても、成果物をこの置き場へ持ってくれば URL は動かない。
+ *   実体は docs/uiapduino.mjs で、GitHub Pages の公開元を /docs にしてある。
+ *
+ *   xcratch/src/gui/.../entry/index.jsx の extensionURL と必ず同じ値にすること。
+ * @type {string}
+ */
+var EXTENSION_URL$1 = 'https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs';
+
+/**
+ * パレットのカテゴリ名。
+ * @type {string}
+ */
+var EXTENSION_NAME$1 = 'UIAPduino';
+
+/**
+ * ブロックの色 [本体, 入力欄・メニュー, 枠線]。getInfo() の color1 / color2 / color3 になる。
+ *
+ * HID 版は null。scratch-vm の既定の緑 (#0FBD8C / #0DA57A / #0B8E69) のまま出る
+ * (scratch-vm の src/engine/runtime.js、defaultExtensionColors)。
+ * @type {?Array<string>}
+ */
+var EXTENSION_COLORS$1 = null;
+
+/**
+ * ブロックパレットのカテゴリ一覧に出す絵 (data URI)。
+ *
+ * HID 版は null。index.js がブロック左端と同じ基板の絵 (blockIconURI) を使う。
+ * @type {?string}
+ */
+var MENU_ICON_URI$1 = null;
+
+/**
+ * 「サーボ [ ] を [ ] 度にする」のピンのメニュー。
+ *
+ * PWM を出せる 5 本だけを並べる。Tools → PWM = TIM2 Default のときの
+ * TIM1 = D0 / D5 / D6 / D12、TIM2 = D2 がそれにあたる。
+ * 数値入力にしていないのは、サーボの繋がらないピンを選べてしまうため。
+ *
+ * ⚠ 表記と値が食い違って見えるが、間違いではない。
+ *   基板のシルクは PA1 = A1、PC4 = A2、PD2 = A3 で、Arduino 番号は 0 / 6 / 12。
+ *   基板に書いてある名前で選ばせ、デバイスへは Arduino 番号を送る。
+ *
+ *   この A1 / A2 / A3 は「A1 の値」のアナログ入力ブロックと同じ物理ピンを指す
+ *   (ADC のチャンネル 1 / 2 / 3 が PA1 / PC4 / PD2)。表記は揃っている。
+ * @type {Array<{text: string, value: string}>}
+ */
+var PWM_PIN_ITEMS$1 = [{
+  text: '2',
+  value: '2'
+}, {
+  text: '5',
+  value: '5'
+}, {
+  text: 'A1',
+  value: '0'
+}, {
+  text: 'A2',
+  value: '6'
+}, {
+  text: 'A3',
+  value: '12'
+}];
+
+/**
+ * PWM を出すブロック (アナログ出力とサーボ) の既定ピン。
+ *
+ * D2 はオンボード LED でもあるので、繋がなくても動きが確かめられる。
+ * @type {number}
+ */
+var PWM_DEFAULT_PIN$1 = 2;
+
+var hidVariant = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  EXTENSION_COLORS: EXTENSION_COLORS$1,
+  EXTENSION_ID: EXTENSION_ID$1,
+  EXTENSION_NAME: EXTENSION_NAME$1,
+  EXTENSION_URL: EXTENSION_URL$1,
+  MENU_ICON_URI: MENU_ICON_URI$1,
+  PWM_DEFAULT_PIN: PWM_DEFAULT_PIN$1,
+  PWM_PIN_ITEMS: PWM_PIN_ITEMS$1,
+  SKETCH_BIN_BASE64: SKETCH_BIN_BASE64$1,
+  SKETCH_BIN_PROTOCOL_VERSION: SKETCH_BIN_PROTOCOL_VERSION$1,
+  SKETCH_BIN_SIZE: SKETCH_BIN_SIZE$1,
+  SKETCH_VARIANT: SKETCH_VARIANT$1
+});
+
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: true } : { done: false, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = true, u = false; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = true, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
@@ -5436,26 +5513,6 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
  * @type {Function}
  */
 var formatMessage = defaultFormatMessage;
-
-/**
- * Xcratch にモジュールとして読み込ませたときの、このモジュール自身の URL。
- *
- * Xcratch は読み込み時に実際の URL をここへ書き込み、プロジェクトにも保存する。
- * 次にそのプロジェクトを開いたとき、この URL から拡張を読み直す。
- * ここに書いてある値は、書き込まれなかった場合の保険。
- *
- * ⚠ この URL は公開したら二度と変えられない。保存されたプロジェクトが
- *   ここから拡張機能を読み直すため、変えると古い作品が開けなくなる。
- *
- *   だから「それが何か」だけで組み立ててある。ビルドの都合 (xcratch/ や dist/) は
- *   入れていない。中の構成を変えても、成果物をこの置き場へ持ってくれば URL は動かない。
- *   実体は docs/uiapduino.mjs で、GitHub Pages の公開元を /docs にしてある。
- *
- *   値は版ごとに違うので variant.js が持つ。
- *   xcratch/src/gui/.../entry/index.jsx の extensionURL と必ず同じ値にすること。
- * @type {string}
- */
-var extensionURL = EXTENSION_URL;
 
 /**
  * ブロック左端に表示するアイコン (data URI)。
@@ -5511,15 +5568,8 @@ var mouseIconURI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAA
 // eslint-disable-next-line max-len
 var flashIconURI = 'data:image/png;base64,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';
 
-/**
- * ブロックパレットのカテゴリ見出しに表示するアイコン (data URI)。
- *
- * 版ごとの絵があればそれを使う (variant.js の MENU_ICON_URI)。Remap3 版は
- * 一覧で HID 版と見分けられるように別の絵を持っている。
- * 無ければブロック左端と同じ絵でよいので使い回す (HID 版)。
- * @type {string}
- */
-var menuIconURI = MENU_ICON_URI;
+// ブロックパレットのカテゴリ見出しに表示するアイコンは版ごとに違うので、
+// getInfo() で決める (this.variant.MENU_ICON_URI、無ければ blockIconURI)。
 
 /**
  * `KEY_TEXT` の 1 コマンドに載せられる文字数。
@@ -6426,12 +6476,18 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
      */
     this.runtime = runtime;
 
+    /**
+     * この拡張機能の版の値。static get variant() を参照。
+     * @type {object}
+     */
+    this.variant = this.constructor.variant;
+
     // Xcratch の runtime は自分の formatMessage を持っている。
     // scratch-vm 0.2.0 (デスクトップ版) は持っていないので、そのままになる。
     if (runtime.formatMessage) {
       formatMessage = runtime.formatMessage;
     }
-    this.processor = new UiapduinoProcessor();
+    this.processor = new UiapduinoProcessor(this.variant.SKETCH_VARIANT);
 
     /**
      * Scratch へ PERIPHERAL_CONNECTED を送った後かどうか。
@@ -6693,7 +6749,7 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
     }
 
     // ステータスボタンと接続モーダルはこの登録が無いと動かない。
-    this.runtime.registerPeripheralExtension(EXTENSION_ID, this);
+    this.runtime.registerPeripheralExtension(this.variant.EXTENSION_ID, this);
   }
 
   /**
@@ -6803,7 +6859,7 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
         // 番号は同梱スケッチのものを出す。拡張機能側の PROTOCOL_VERSION では
         // なく、実際に焼かれるものの番号でなければ意味がない。
         // (2 つが食い違っていたら flashSketch() が焼かずに止める)
-        text: this._getText('flashSketch').replace('{version}', SKETCH_BIN_PROTOCOL_VERSION),
+        text: this._getText('flashSketch').replace('{version}', this.variant.SKETCH_BIN_PROTOCOL_VERSION),
         blockType: BlockType.BOOLEAN,
         blockIconURI: flashIconURI
       }, {
@@ -6830,12 +6886,12 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
         this.locale = 'en';
       }
       var info = {
-        id: EXTENSION_ID,
+        id: this.variant.EXTENSION_ID,
         // Xcratch がプロジェクトに保存する読み込み元。
         // scratch-vm 0.2.0 (デスクトップ版) はこの項目を見ないので影響しない。
-        extensionURL: extensionURL,
-        name: EXTENSION_NAME,
-        menuIconURI: menuIconURI,
+        extensionURL: this.constructor.extensionURL,
+        name: this.variant.EXTENSION_NAME,
+        menuIconURI: this.variant.MENU_ICON_URI || blockIconURI,
         blockIconURI: blockIconURI,
         // カテゴリ見出しに接続状態ボタンを出す。未接続なら「!」になる。
         showStatusButton: true,
@@ -6898,7 +6954,7 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
           arguments: {
             PIN: {
               type: ArgumentType.NUMBER,
-              defaultValue: PWM_DEFAULT_PIN
+              defaultValue: this.variant.PWM_DEFAULT_PIN
             },
             VALUE: {
               type: ArgumentType.NUMBER,
@@ -6951,7 +7007,7 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
           arguments: {
             PIN: {
               type: ArgumentType.NUMBER,
-              defaultValue: PWM_DEFAULT_PIN,
+              defaultValue: this.variant.PWM_DEFAULT_PIN,
               menu: 'SERVO_PIN'
             },
             // ArgumentType.ANGLE は使わない。あれは「向き」を選ぶ
@@ -7577,7 +7633,7 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
           // この名前でメニューを引くため、変えると古い作品のブロックが壊れる。
           SERVO_PIN: {
             acceptReporters: true,
-            items: PWM_PIN_ITEMS
+            items: this.variant.PWM_PIN_ITEMS
           },
           // 値は arduino_core_ch32 の Keyboard.h の定数 (KEY_MENU_ITEMS を見ること)
           KEY: {
@@ -7720,7 +7776,7 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
         // 焼くべきものを見分けるための番号。基板側の番号は出さない。
         // 直すのに要るのは「何を焼けばよいか」であって、今何が焼かれて
         // いるかではない。基板側の番号はコンソールに出ている。
-        variant ? "".concat(this._getText('sketchVariantLabel'), ": ").concat(SKETCH_VARIANT) : "".concat(this._getText('sketchProtocolLabel'), ": ").concat(PROTOCOL_VERSION)].map(function (text, i) {
+        variant ? "".concat(this._getText('sketchVariantLabel'), ": ").concat(this.variant.SKETCH_VARIANT) : "".concat(this._getText('sketchProtocolLabel'), ": ").concat(PROTOCOL_VERSION)].map(function (text, i) {
           return {
             opcode: "sketchProblem".concat(i),
             blockType: BlockType.COMMAND,
@@ -7743,11 +7799,11 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
       // ブロックの色は版ごとに決まる (variant.js の EXTENSION_COLORS)。
       // 無ければ何も足さず、scratch-vm の既定の緑になる。
       // 説明ブロックに差し替えたときも同じ色にしておく。どの拡張機能の説明かが色で分かる。
-      if (EXTENSION_COLORS) {
-        var _EXTENSION_COLORS = _slicedToArray(EXTENSION_COLORS, 3);
-        info.color1 = _EXTENSION_COLORS[0];
-        info.color2 = _EXTENSION_COLORS[1];
-        info.color3 = _EXTENSION_COLORS[2];
+      if (this.variant.EXTENSION_COLORS) {
+        var _this$variant$EXTENSI = _slicedToArray(this.variant.EXTENSION_COLORS, 3);
+        info.color1 = _this$variant$EXTENSI[0];
+        info.color2 = _this$variant$EXTENSI[1];
+        info.color3 = _this$variant$EXTENSI[2];
       }
       return info;
     }
@@ -7888,10 +7944,13 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
               // 同梱スケッチと拡張機能が食い違っていたら、焼いても繋がらない。
               // 焼いた後に「まだ合いません」と言われるのがいちばん分からないので、
               // 焼く前に止める。起きるのは .bin を作り直し忘れたときだけ。
-              {
+              if (!(this.variant.SKETCH_BIN_PROTOCOL_VERSION !== PROTOCOL_VERSION)) {
                 _context.next = 1;
                 break;
               }
+              console.error('[uiapduino] the embedded sketch does not match this extension: ' + "bin=".concat(this.variant.SKETCH_BIN_PROTOCOL_VERSION, " extension=").concat(PROTOCOL_VERSION, ". ") + 'Run `node ./scripts/embed-bin.mjs` after rebuilding the .bin.');
+              this._setFlashState('flashFailed', null);
+              return _context.abrupt("return", false);
             case 1:
               bin = this._sketchBin(); // 繋がったままだと、こちらは D004 を掴んでいるつもりで居続ける。
               // 実際には書き込みモードに入った時点で基板は入れ替わっている。
@@ -7953,15 +8012,15 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
     key: "_sketchBin",
     value: function _sketchBin() {
       if (this._sketchBinCache) return this._sketchBinCache;
-      var raw = atob(SKETCH_BIN_BASE64);
+      var raw = atob(this.variant.SKETCH_BIN_BASE64);
       var bin = new Uint8Array(raw.length);
       for (var i = 0; i < raw.length; i++) {
         bin[i] = raw.charCodeAt(i);
       }
       // 生成物が壊れていないかの確認。ここで気づかないと、
       // 壊れたものを基板へ流し込むことになる。
-      if (bin.length !== SKETCH_BIN_SIZE) {
-        throw new Error("embedded sketch is broken: ".concat(bin.length, " bytes, expected ").concat(SKETCH_BIN_SIZE));
+      if (bin.length !== this.variant.SKETCH_BIN_SIZE) {
+        throw new Error("embedded sketch is broken: ".concat(bin.length, " bytes, expected ").concat(this.variant.SKETCH_BIN_SIZE));
       }
       this._sketchBinCache = bin;
       return bin;
@@ -8380,7 +8439,7 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
       if (!this._emitDisconnected()) return;
       this.runtime.emit(this.runtime.constructor.PERIPHERAL_CONNECTION_LOST_ERROR, {
         message: 'Scratch lost connection to',
-        extensionId: EXTENSION_ID
+        extensionId: this.variant.EXTENSION_ID
       });
     }
 
@@ -9981,22 +10040,251 @@ var Scratch3Uiapduino = /*#__PURE__*/function () {
     }
 
     /**
+     * この拡張機能の版の値 (ID・URL・名前・色・PWM のピン・同梱の .bin など)。
+     *
+     * このクラスは HID 版で、variant.js の値を返す。Remap3 版は remap3.js で
+     * これを上書きしたサブクラスとして作り、variantRemap3.js の値を返す。
+     * 本体は版の値をいつも this.variant (static では this.variant) から取る。
+     *
+     * ⚠ ファイルの先頭で版の値を import して直接使わないこと。
+     *   デスクトップ版は 1 つのアプリに HID 版と Remap3 版を同時に入れるので、
+     *   ファイルで決め打ちにすると、片方の版がもう片方の値で動いてしまう。
+     * @returns {object} variant*.js の中身
+     */
+  }, {
+    key: "variant",
+    get: function get() {
+      return hidVariant;
+    }
+
+    /**
      * Xcratch がモジュール読み込み時に、実際に読み込んだ URL を書き込む。
      * getInfo() で返すと、プロジェクトに「どこから読めばよいか」が残る。
      * デスクトップ版では拡張が組み込みなので、この値は使われない。
+     *
+     * 版ごとのクラスに自分の値として持たせる。サブクラスは親の static を
+     * 引き継ぐので、hasOwnProperty で自分に書かれたものだけを見る。
      * @param {string} url - このモジュールの URL
      */
   }, {
     key: "extensionURL",
-    get: /** @returns {string} このモジュールの URL */
+    get:
+    /**
+     * このモジュールの URL。書き込まれていなければ版の既定値 (variant*.js の EXTENSION_URL)。
+     *
+     * ⚠ 既定値の URL は公開したら二度と変えられない。保存されたプロジェクトが
+     *   ここから拡張機能を読み直すため、変えると古い作品が開けなくなる。
+     *   詳しくは variant.js の EXTENSION_URL。
+     * @returns {string} このモジュールの URL
+     */
     function get() {
-      return extensionURL;
+      return Object.prototype.hasOwnProperty.call(this, '_extensionURL') ? this._extensionURL : this.variant.EXTENSION_URL;
     },
     set: function set(url) {
-      if (url) extensionURL = url;
+      if (url) this._extensionURL = url;
     }
   }]);
 }(); // blockClass という名前でも出すこと。Xcratch のローダはこの名前で拡張本体を探す。
 
-export { Scratch3Uiapduino as blockClass, entry };
+// このファイルは xcratch/scripts/embed-bin.mjs が作る。手で直さない。
+//
+// 中身は sketches/ScratchUiapduino-remap3.ino.bin をそのまま base64 にしたもの。
+// 「スケッチを書き込む」ブロックが、これを基板の Flash へ流し込む。
+//
+// .ino を直したら、ビルドし直した .bin を sketches/ へ置いてから
+//   node ./scripts/embed-bin.mjs remap3
+// を走らせ、この生成物と docs/uiapduino-remap3.mjs を一緒にコミットすること。
+
+/**
+ * 同梱している .bin (base64)。
+ *
+ * 1 行が長くなりすぎないように分けてあるだけで、繋げば元の 1 本に戻る。
+ * @type {string}
+ */
+var SKETCH_BIN_BASE64 = ['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', '9w9jaPcAiUcjAPYAEwU1/NW3kwf1/JP39w8hR2Nk9wA1Fcm/kwcAA2MV9QCTB3ACCaipR2MF9QC1R2MX', '9QCTB4ACI4D1AOG9pUdjFfUAkwewAsW/kwcAAmMV9QCTB8ACzbcTBfX9E3X1D5MH0AVj46cQjWeTh4e/', 'CgU+lRxBgoeJRyMA9gD5R22/iUcjAPYA/UdFv4lHIwD2AJMHAAJVt4lHIwD2AJMHEAJhv4lHIwD2AJMH', 'IAJxt4lHIwD2AJMHMAJBt4lHIwD2AJMHQAKVv4lHIwD2AJMHUAKlt4lHIwD2AJMHYAKxv4lHIwD2AD2/', 'iUcjAPYAkwfQAqG3iUcjAPYAkwfgAjW/iUcjAPYAkwfwAgW/iUcjAPYAkwcAAxW3iUcjAPYAkwcQAyG/', 'iUcjAPYAkwcwAzG3iUcjAPYAkwdAAwG3iUcjAPYAkwdQA9W9iUcjAPYAkwdgA+W1iUcjAPYAkwdwA/G9', 'iUcjAPYAkweAA8G9AUWCgAPDQcWTB/AHvoZjyqcAEwcQ+LqGY0XlAJMWhQHhhhMH8AdjyrcAkwcQ+D6H', 'Y8X1ABOXhQFhhyOGYcKT9vYPk4fBwqOA1wATd/cPI4HnABN29g+jgccAgoARESLKLoSyhQbMJsgywCrC', '7/DP/YJFqoQihe/wL/0SR6qHgegZx5MkFwCzBJBAk+QUAIHrGcSTJxQAswfwQJPnFwAZ5yXo4kBSRMJE', 'cQGCgJNW90EzxuYAk9X0QRWOs8aVAI2OOoVj08YAJoWBRRnMk1b0QZPV90EzxoYAFY6zxvUAjY6ihWPT', 'xgC+hQFGPsQ6xi7CKsAJPwJFMkeSRQmPN1UHABMFBTA6wA2MqTaiRwJHQb8BRW2/txcDAJOHF9QDx3HF', 'Bcf9F+X/IUYzB/UAg0UHABOHgcE+lyMAtwCFB+OWx/6FR6OL8cSCgIFH8b9RERMHIAUGxKMBAQAjAgEA', 'owIBACMDAQCjAwEAIwDhAKMAoQAjAcEAkcUJxhMFMQDvABAStzcMAJOHF1CDxnHFmcL9F+X/CoVBN6JA', 'N9UIABMFBaAxAUW8YREuhiMQoQCKhQlFBsJpP5JAAUaBRQ1FIQF5t5OHwcSDwgcAA8MXAAPFJwCDxTcA', 'A8ZHAIPGVwADx2cAk4cBwiOAVwCjgAcAI4FnAKOBpwAjgrcAo4LHACOD1wCjg+cAgoADx0HFE0X1/2mP', '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', 'gcmT9nUA/RXh0gmgwbcBAGOKAgCT0oIAnUXjiQL6E0T2/223jUb9Fv3+twQYAITLoUb9Fv3+twQIAMEE', 'hMuEQ7fW/P/9FvWMt0YEANWMhMMCRJJEIkJBAYKAAQCRRv0W/f6zxGQAGUcBAAEAhMtJvwAAAAAAAAAA', 'FANXAEUAQgBIAEkARAAwADAAMAAAAAAAMANVAEkAQQBQAGQAdQBpAG4AbwAgAEsAQgBEACsATQBvAHUA', 'cwBlACsAVwBlAGIAAAAAAAoDVQBJAEEAUAAAAAQDCQSMAQAAKgIAACoCAAAsAgAAKgIAALIBAADaAQAA', 'KgIAACoCAABEAgAAKgIAACoCAAAAAgAAKgIAACoCAACQAgAAYgIAAEYHAABIBgAATgYAAFYHAADqBgAA', '6gYAAOoGAADqBgAA6gYAAOoGAADqBgAA6gYAAOoGAADqBgAA6gYAAOoGAADqBgAAkAYAAKIGAACoBgAA', 'rgYAALQGAAC6BgAAwAYAAMYGAADMBgAA0gYAANgGAADeBgAA5AYAAJwGAADqBgAA6gYAAFQGAABgBgAA', 'bAYAAFoGAABmBgAAcgYAAHgGAAB+BgAAhAYAAIoGAACWBgAAiAcAAEAIAACcBwAAqAcAALQHAADMBwAA', 'RggAAOQHAADwBwAA2AcAAAQIAABeCAAA/gcAAGoIAAB2CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAADQIAAA6CAAAWAgAAAoIAABkCAAAcAgAAJIHAAB8CAAAfAgAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAABYIAAAuCAAAIggAAMAHAAD4BwAAUggAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAA', 'fAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAfAgAAHwIAAB8CAAAEAgAACgIAAAcCAAATAgAAPoMAADcDQAA', '5g0AAPoNAAACDgAAEA4AACQOAAA2DgAAPg4AAEgOAABYDgAAaA4AAHQOAAB8DgAAjA4AAJwOAACoDgAA', 'sA4AALgOAADADgAAyA4AAM4OAADWDgAA3g4AAOYOAADuDgAADA8AAMYYAAAYGQAAaBkAAAYaAADCFQAA', 'JhoAACoaAABWGQAAcBkAAE4aAABmGgAAbhoAAIwaAACkGgAAiB4AAK4eAAC8HgAAzB4AAMIVAADMHgAA', '4CIAAHofAACMFQAAjBUAAAwhAACMFQAA8h8AAEwgAACMFQAAjBUAAIohAACMFQAAjBUAAKggAACMFQAA', 'jBUAAGwiAAD2IQAABgD/CQGhAXUIlQgJAoECdQiVIAkDsQLABQEJBqEBdQGVCAUHGeAp5xUAJQGBApUB', 'dQiBA5UFdQEFCBkBKQWRApUBdQORA5UHdQiRA5UGdQgVACWnBQcZACmngQDAAAAABQEJAqEBCQGhAAUJ', 'GQEpAxUAJQGVA3UBgQKVAXUFgQMFAQkwCTEJOBWBJX91CJUDgQbAwAkCVAADAQCAZAkEAAABAwECAAkh', 'EAEAASI0AAcFgQMEAAoJBAEAAQMBAQAJIRABAAEiRQAHBYIDCAAKCQQCAAEDAAAACSEQAQABIhgABwWD', 'AwgAChIBEAEAAAAICRIE0AEAAQIDAQAAAAgBQAAQAUAAFAFAJAAAAAAAAEALkQAAIwAAAAAAAEALEQEA', 'EAAAAAAAAEALkQEAJwAAAAAAAEALEQIAIgAAAAAsAUALjQAAAQAAAAAsAUALDQEAEwAAAAAsAUALjQEA', 'FAAAAAAsAUALDQIAIAAAAAAsAUALjQAAAgAAAAAsAUALDQEAIQAAAAAsAUALjQEA/////wAAAAAAAAAA', 'AAEAAFwvAAASAAAAAAIAAAgvAABUAAAAACIAANQuAAA0AAAAACIBAIwuAABFAAAAACICAHQuAAAYAAAA', 'AAMAAAArAAAEAAAAAQMJBPQqAAAKAAAAAgMJBMAqAAAwAAAAAwMJBKgqAAAUAAAAAQAAAAIAAAAQAAAA', 'EQAAABIAAAATAAAAFAAAABUAAAAWAAAAFwAAACAAAAAhAAAAIgAAACMAAAAkAAAAJQAAACYAAAAnAAAA', 'AQAAAAAAAAAGAAAADAAAAA0AAAAPAAAAEAAAAA4AAAACAAAAACQBQAAAAAABAAAAACQBQACAAAAUAAAA', 'ACQBQAAAAQAiAAAAACQBQACAAQAjAAAAACQBQAAAAgAlAAAAACQBQACAAgAmAAAAACQBQAAAAwAkAAAA', 'ACQBQACAAwD/////AAAAAAAAAAABAAAAAgAAAAQAAAAIAAAAEAAAACAAAABAAAAAgAAAABQAAAAAAAAA', 'FAAAAAAAAAAUAAAAAAAAABQAAAAAAAAAFAAAAAAAAAAUAAAAAAAAABQAAAAAAAAAFAAAAAAAAAAhQCMk', 'JV4mKigpXyt7fXw6In48Pj8AAAAxMjM0NTY3ODkwLT1bXVw7J2AsLi8AAABSJgAA/////7oAugDAwPjA', 'wPj4+A=='].join('');
+
+/** @type {number} 元の .bin の大きさ (バイト)。復号できたかの確認に使う */
+var SKETCH_BIN_SIZE = 12784;
+
+/**
+ * この .bin が名乗るプロトコル番号 (.ino の PROTOCOL_VERSION)。
+ *
+ * uiapduinoProcessor.js の PROTOCOL_VERSION と食い違っていたら、
+ * .bin を作り直し忘れている。書き込みブロックはその場合に焼かずに止まる。
+ * @type {number}
+ */
+var SKETCH_BIN_PROTOCOL_VERSION = 8;
+
+// scratch3-uiapduino / variantRemap3.js
+// Created by tarosay (2026)
+//
+// 版ごとに違う値だけを集めたファイル。これは Remap3 版 (Tools → PWM = TIM2 Remap3)。
+//
+// 仕組みと約束は variant.js の冒頭を読むこと。
+// このファイルを読むのは remap3.js (Remap3 版の入口) だけ。
+//
+// HID 版との違いは PWM を出せるピンだけ。機能は全部同じで、キーボード・マウス・
+// シリアル通信・NeoPixel・距離計もそのまま使える。
+//
+//   HID 版     TIM1 = D0 / D5 / D6 / D12   TIM2 = D2                      5 本
+//   Remap3 版  TIM1 = D0 / D5 / D6 / D12   TIM2 = D3 / D9 / D15 / D16     8 本
+//
+// ⚠ Remap3 版では D2 (オンボード LED) が PWM を出せない。点灯と消灯だけになる。
+
+
+/**
+ * この拡張機能が相手にするスケッチの版。
+ *
+ * sketches/ScratchUiapduino を Tools → PWM = TIM2 Remap3 でビルドすると 1 を名乗る。
+ * @type {number}
+ */
+var SKETCH_VARIANT = 1;
+
+/**
+ * 拡張機能 ID。HID 版と必ず別の値にすること (variant.js を参照)。
+ * @type {string}
+ */
+var EXTENSION_ID = 'uiapduinoRemap3';
+
+/**
+ * Xcratch にモジュールとして読み込ませたときの、このモジュール自身の URL。
+ *
+ * ⚠ 公開したら二度と変えられない (理由は variant.js の EXTENSION_URL)。
+ *   名前は remap3 で決めた (2026-09-27)。ID の uiapduinoRemap3 も同じ。
+ *   xcratch/src/gui/.../entry-remap3/index.jsx の extensionURL と必ず同じ値にすること。
+ * @type {string}
+ */
+var EXTENSION_URL = 'https://tarosay.github.io/scratch3-uiapduino/uiapduino-remap3.mjs';
+
+/**
+ * パレットのカテゴリ名。HID 版と並べたときに見分けられるようにする。
+ * @type {string}
+ */
+var EXTENSION_NAME = 'UIAPduino Remap3';
+
+/**
+ * ブロックの色 [本体, 入力欄・メニュー, 枠線]。getInfo() の color1 / color2 / color3 になる。
+ *
+ * HID 版 (既定の緑) と並べたときに、パレットでもスクリプトでも見分けられるようにする。
+ *
+ * 本体の #3F51B5 は tarosay さんの指定。残りの 2 つはそこから作った。
+ * 既定の緑 (#0FBD8C → #0DA57A → #0B8E69) と同じ比率で暗くしてある
+ * (RGB をそれぞれ約 0.875 倍と 0.75 倍)。
+ * @type {?Array<string>}
+ */
+var EXTENSION_COLORS = ['#3F51B5', '#37479E', '#2F3D88'];
+
+/**
+ * ブロックパレットのカテゴリ一覧に出す絵 (data URI)。
+ *
+ * ブロックの色を変えても、ここは変わらない。一覧に出るのは色ではなく絵だから
+ * (scratch-vm の runtime.js: menuIconURI → blockIconURI → どちらも無ければ色の丸)。
+ * HID 版と並べたときに一覧でも見分けられるように、Remap3 版だけ別の絵にしてある。
+ *
+ * 実体は scratch-gui 側の
+ * src/lib/libraries/extensions/uiapduino/uiapduino-remap3-menu.png (80x80, 背景透明)。
+ * 作り方: uiapduino-small.png の灰色の線を #3F51B5 に塗り替え (白い塗りはそのまま)、
+ * 62x62 に縮めて、#3F51B5 で塗りつぶした直径 80 の丸の中央に載せた。
+ * 画像を差し替えたら base64 も入れ直すこと。
+ * @type {?string}
+ */
+// eslint-disable-next-line max-len
+var MENU_ICON_URI = 'data:image/png;base64,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';
+
+/**
+ * 「サーボ [ ] を [ ] 度にする」のピンのメニュー。
+ *
+ * PWM を出せる 8 本を並べる。表記の決め方は variant.js と同じで、
+ * 基板のシルクで選ばせ、デバイスへは Arduino 番号を送る
+ * (A1 / A2 / A3 = D0 / D6 / D12、TX / RX = D15 / D16)。
+ *
+ * D15 / D16 のシルクは TX / RX。tarosay さんが示したピン配置図
+ * (Yuuki U. 作、2026-06-16 版) で確かめた。A5 / A6 はアナログの番号で、
+ * 基板には書かれていない。
+ *
+ * D3 には基板上に 2.2kΩ のプルアップがある。PWM を出している間は効かないが、
+ * 止めて入力に戻すと High 側へ引かれ、LED を繋いでいるとうっすら光ることがある。
+ * PWMmin のスケッチ例 PWMminRemap3 はこれを理由に D3 を外しているが、ここでは並べる。
+ *
+ * D15 / D16 は UART の Tx / Rx と同じ足。シリアル通信を始めた後は
+ * デバイスが PWM を RSP_ERR で弾く。
+ * @type {Array<{text: string, value: string}>}
+ */
+var PWM_PIN_ITEMS = [{
+  text: '3',
+  value: '3'
+}, {
+  text: '5',
+  value: '5'
+}, {
+  text: '9',
+  value: '9'
+}, {
+  text: 'TX',
+  value: '15'
+}, {
+  text: 'RX',
+  value: '16'
+}, {
+  text: 'A1',
+  value: '0'
+}, {
+  text: 'A2',
+  value: '6'
+}, {
+  text: 'A3',
+  value: '12'
+}];
+
+/**
+ * PWM を出すブロック (アナログ出力とサーボ) の既定ピン。
+ *
+ * HID 版の D2 は使えない (PWM を出せない)。D5 にしてあるのは、
+ * どちらの版でも PWM を出せるピンで、プルアップも UART との兼用も無いため。
+ * @type {number}
+ */
+var PWM_DEFAULT_PIN = 5;
+
+var remap3Variant = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  EXTENSION_COLORS: EXTENSION_COLORS,
+  EXTENSION_ID: EXTENSION_ID,
+  EXTENSION_NAME: EXTENSION_NAME,
+  EXTENSION_URL: EXTENSION_URL,
+  MENU_ICON_URI: MENU_ICON_URI,
+  PWM_DEFAULT_PIN: PWM_DEFAULT_PIN,
+  PWM_PIN_ITEMS: PWM_PIN_ITEMS,
+  SKETCH_BIN_BASE64: SKETCH_BIN_BASE64,
+  SKETCH_BIN_PROTOCOL_VERSION: SKETCH_BIN_PROTOCOL_VERSION,
+  SKETCH_BIN_SIZE: SKETCH_BIN_SIZE,
+  SKETCH_VARIANT: SKETCH_VARIANT
+});
+
+function _callSuper(t, o, e) { return o = _getPrototypeOf(o), _possibleConstructorReturn(t, _isNativeReflectConstruct() ? Reflect.construct(o, e || [], _getPrototypeOf(t).constructor) : o.apply(t, e)); }
+function _isNativeReflectConstruct() { try { var t = !Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); } catch (t) {} return (_isNativeReflectConstruct = function _isNativeReflectConstruct() { return !!t; })(); }
+
+/**
+ * UIAPduino Remap3 (Tools → PWM = TIM2 Remap3 のスケッチ用)。
+ * PWM を出せるピンが 8 本になる。それ以外は HID 版と同じ。
+ */
+var Scratch3UiapduinoRemap3 = /*#__PURE__*/function (_Scratch3Uiapduino) {
+  function Scratch3UiapduinoRemap3() {
+    _classCallCheck$1(this, Scratch3UiapduinoRemap3);
+    return _callSuper(this, Scratch3UiapduinoRemap3, arguments);
+  }
+  _inherits(Scratch3UiapduinoRemap3, _Scratch3Uiapduino);
+  return _createClass$1(Scratch3UiapduinoRemap3, null, [{
+    key: "variant",
+    get:
+    /**
+     * Remap3 版の値。本体の static get variant() を参照。
+     * @returns {object} variantRemap3.js の中身
+     */
+    function get() {
+      return remap3Variant;
+    }
+  }]);
+}(Scratch3Uiapduino); // blockClass という名前でも出すこと。Xcratch のローダはこの名前で拡張本体を探す
+
+export { Scratch3UiapduinoRemap3 as blockClass, entry };
 //# sourceMappingURL=uiapduino-remap3.mjs.map

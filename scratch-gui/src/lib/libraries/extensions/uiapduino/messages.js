@@ -18,11 +18,17 @@ export default {
     ja: {
         'gui.extension.uiapduino.name': 'UIAPduino',
         'gui.extension.uiapduino.description': '自分だけのコントローラーを作ってみよう。',
-        'gui.extension.uiapduino.connectingMessage': 'UIAPduinoに接続中'
+        'gui.extension.uiapduino.connectingMessage': 'UIAPduinoに接続中',
+        'gui.extension.uiapduinoRemap3.name': 'UIAPduino Remap3',
+        'gui.extension.uiapduinoRemap3.description': 'PWM を 8 本出せる版です。',
+        'gui.extension.uiapduinoRemap3.connectingMessage': 'UIAPduinoに接続中'
     },
     'ja-Hira': {
         'gui.extension.uiapduino.name': 'UIAPduino',
         'gui.extension.uiapduino.description': 'じぶんだけのコントローラーをつくってみよう。',
-        'gui.extension.uiapduino.connectingMessage': 'UIAPduinoにせつぞくちゅう'
+        'gui.extension.uiapduino.connectingMessage': 'UIAPduinoにせつぞくちゅう',
+        'gui.extension.uiapduinoRemap3.name': 'UIAPduino Remap3',
+        'gui.extension.uiapduinoRemap3.description': 'PWM を 8ほん だせる はんです。',
+        'gui.extension.uiapduinoRemap3.connectingMessage': 'UIAPduinoにせつぞくちゅう'
     }
 };

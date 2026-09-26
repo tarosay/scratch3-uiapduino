@@ -6,12 +6,17 @@
 // ⚠ 1 つのソースから 2 つの版を作っている。index.js と uiapduinoProcessor.js は
 //   両方の版で同じもので、違いはこのファイルと同梱の .bin だけ。
 //
-//   HID 版     variant.js         ← このファイル。デスクトップ版と Xcratch 版の uiapduino.mjs
-//   Remap3 版  variantRemap3.js   Xcratch 版の uiapduino-remap3.mjs
+//   版         値                 入口 (拡張機能のクラス)
+//   HID 版     variant.js         index.js   ← このファイル
+//   Remap3 版  variantRemap3.js   remap3.js  (index.js のクラスを受け継ぐ)
 //
-//   Xcratch 版のビルドでは sync-block.mjs が、版ごとにどちらかを
-//   variant.js という名前で置く。本体は常に './variant' を読むので、
-//   本体のコードに版の分岐は無い。
+//   本体は版の値をいつも this.variant から取る。index.js のクラスの
+//   static get variant() がこのファイルを返し、remap3.js のサブクラスが
+//   それを上書きして variantRemap3.js を返す。
+//
+//   デスクトップ版は 1 つのアプリに両方の入口を登録する
+//   (extension-support/extension-manager.js)。Xcratch 版は入口ごとに
+//   1 枚ずつ .mjs を作る (xcratch/scripts/builds.mjs)。
 //
 //   ここに無い違いを本体に書き足さないこと。書くなら先にここへ値を足す。
 //   分岐が本体に散ると、片方だけ直して他方を直し忘れる。
@@ -48,7 +53,17 @@ export const EXTENSION_ID = 'uiapduino';
 /**
  * Xcratch にモジュールとして読み込ませたときの、このモジュール自身の URL。
  *
- * ⚠ 公開したら二度と変えられない。理由は index.js の extensionURL を参照。
+ * Xcratch は読み込み時に実際の URL を書き込み (index.js の static set extensionURL)、
+ * プロジェクトにも保存する。次にそのプロジェクトを開いたとき、この URL から拡張を
+ * 読み直す。ここに書いてある値は、書き込まれなかった場合の保険。
+ *
+ * ⚠ この URL は公開したら二度と変えられない。保存されたプロジェクトが
+ *   ここから拡張機能を読み直すため、変えると古い作品が開けなくなる。
+ *
+ *   だから「それが何か」だけで組み立ててある。ビルドの都合 (xcratch/ や dist/) は
+ *   入れていない。中の構成を変えても、成果物をこの置き場へ持ってくれば URL は動かない。
+ *   実体は docs/uiapduino.mjs で、GitHub Pages の公開元を /docs にしてある。
+ *
  *   xcratch/src/gui/.../entry/index.jsx の extensionURL と必ず同じ値にすること。
  * @type {string}
  */

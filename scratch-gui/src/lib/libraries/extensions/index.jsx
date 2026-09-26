@@ -50,6 +50,10 @@ import uiapduinoIconURL from './uiapduino/uiapduino.png';
 import uiapduinoInsetIconURL from './uiapduino/uiapduino-small.png';
 import uiapduinoConnectionIconURL from './uiapduino/uiapduino-illustration.png';
 import uiapduinoConnectionBadgeIconURL from './uiapduino/usb-hid-white.svg';
+// Remap3 版のカード。大きな絵は uiapduino.png の緑を #3F51B5 (Remap3 版のブロックの色) に
+// 置き換えたもの、小さな絵は uiapduino-small.png の線を同じ青にしたもの (背景は透明)。
+import uiapduinoRemap3IconURL from './uiapduino/uiapduino-remap3.png';
+import uiapduinoRemap3InsetIconURL from './uiapduino/uiapduino-remap3-small.png';
 
 export default [
     {
@@ -101,6 +105,45 @@ export default [
                 defaultMessage="Connecting to UIAPduino"
                 description="Message shown while connecting to UIAPduino."
                 id="gui.extension.uiapduino.connectingMessage"
+            />
+        ),
+        helpLink: 'https://github.com/tarosay/scratch3-uiapduino#readme'
+    },
+    {
+        // Remap3 版 (PWM 8 本)。ブロックは HID 版と同じで、PWM を出せるピンが違うだけ。
+        // extensionId は scratch-vm の extension-manager.js と
+        // scratch3_uiapduino/variantRemap3.js の EXTENSION_ID と同じにすること。
+        //
+        // 接続モーダルの絵とバッジは HID 版と同じものを使う。繋ぐ基板が同じだから。
+        // 説明は上の HID 版の項を読むこと。
+        name: (
+            <FormattedMessage
+                defaultMessage="UIAPduino Remap3"
+                description="Name for the 'UIAPduino Remap3' extension"
+                id="gui.extension.uiapduinoRemap3.name"
+            />
+        ),
+        extensionId: 'uiapduinoRemap3',
+        iconURL: uiapduinoRemap3IconURL,
+        insetIconURL: uiapduinoRemap3InsetIconURL,
+        description: (
+            <FormattedMessage
+                defaultMessage="UIAPduino with 8 PWM pins."
+                description="Description for the 'UIAPduino Remap3' extension"
+                id="gui.extension.uiapduinoRemap3.description"
+            />
+        ),
+        featured: true,
+        launchPeripheralConnectionFlow: true,
+        useAutoScan: false,
+        connectionIconURL: uiapduinoConnectionIconURL,
+        connectionSmallIconURL: uiapduinoInsetIconURL,
+        connectionBadgeIconURL: uiapduinoConnectionBadgeIconURL,
+        connectingMessage: (
+            <FormattedMessage
+                defaultMessage="Connecting to UIAPduino"
+                description="Message shown while connecting to UIAPduino Remap3."
+                id="gui.extension.uiapduinoRemap3.connectingMessage"
             />
         ),
         helpLink: 'https://github.com/tarosay/scratch3-uiapduino#readme'

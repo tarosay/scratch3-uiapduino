@@ -18,9 +18,10 @@ import {BUILDS} from './builds.mjs';
 
 // 版 (HID 版 / Remap3 版) ごとに 1 枚ずつ作る。一覧は builds.mjs。
 //
-// src/vm/extensions/<blockDir> の中身は sync-block.mjs が置いた複製。
+// src/vm/extensions/block の中身は sync-block.mjs が置いた複製。
 // 実体はこのリポジトリの scratch-vm/src/extensions/scratch3_uiapduino で、
-// デスクトップ版とまったく同じファイルをビルドしている。版で違うのは variant.js だけ。
+// デスクトップ版とまったく同じファイルをビルドしている。版で違うのは入口
+// (builds.mjs の blockFile) だけ。
 /**
  * 1 つの版の rollup 設定を作る。
  * @param {import('./builds.mjs').Build} build - 版
@@ -29,7 +30,7 @@ import {BUILDS} from './builds.mjs';
 const makeConfig = build => ({
     input: [
         path.resolve(process.cwd(), './src/gui/lib/libraries/extensions', build.entryDir, 'index.jsx'),
-        path.resolve(process.cwd(), './src/vm/extensions', build.blockDir, 'index.js')
+        path.resolve(process.cwd(), './src/vm/extensions/block', build.blockFile)
     ],
     context: 'window',
     plugins: [

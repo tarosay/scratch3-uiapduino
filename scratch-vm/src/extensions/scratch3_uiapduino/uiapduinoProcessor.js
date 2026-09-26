@@ -16,9 +16,12 @@
 // uiapruby.html が実機に対して使っているものに合わせてある。
 // デバイス側ライブラリ (Hid.h) が既に持っている契約なので、
 // 既存スケッチ資産と同じ経路で動く。
-
-// 版ごとに違う値。HID 版と Remap3 版でこのファイルは共有している (variant.js を参照)。
-import {SKETCH_VARIANT} from './variant';
+//
+// ── 版について ──────────────────────────────────────────────────────────────
+// このファイルは HID 版と Remap3 版で共有している。版ごとに違う値はここに書かず、
+// 相手にするスケッチの版の番号だけを、作るときに引数で受け取る (constructor)。
+// 1 つのアプリ (デスクトップ版) に両方の版が同時に入るので、
+// ファイルの中で版を決め打ちにはできない。
 
 /**
  * WebHID デバイスフィルタ。
@@ -82,7 +85,8 @@ const REPORT_ID = 0;
 const PROTOCOL_VERSION = 8;
 
 /*
- * この拡張機能が相手にするスケッチの版 (SKETCH_VARIANT) は variant.js が持つ。
+ * この拡張機能が相手にするスケッチの版 (SKETCH_VARIANT) は variant*.js が持ち、
+ * index.js が UiapduinoProcessor を作るときに渡す。
  *
  * UIAPduino は Flash が 16KB しかなく、機能を全部は載せられない。
  * 派生が出る前提で、基板がどの版を焼かれているかを PING の応答の上位バイトで名乗る。
@@ -90,9 +94,6 @@ const PROTOCOL_VERSION = 8;
  * これが無いと、別の版が焼かれた基板に繋いだとき
  * 「プロトコルのバージョンが違います」としか言えない。本当の原因は
  * 版違いなのに、利用者は同じスケッチを書き込み直してまた失敗する。
- *
- * このファイルは両方の版で同じもの。版ごとの値は variant.js にしか書かない。
- * (import はファイルの先頭にある)
  */
 
 /**
@@ -428,7 +429,12 @@ const COMMAND_TIMEOUT = 3000;
  */
 
 class UiapduinoProcessor {
-    constructor () {
+    /**
+     * @param {number} sketchVariant - 相手にするスケッチの版 (variant*.js の SKETCH_VARIANT)。
+     *   接続時に基板が名乗る版とこれを比べ、違えば繋がない。
+     */
+    constructor (sketchVariant) {
+        this.sketchVariant = sketchVariant;
         this.device = null;
         this.featureReportSize = FEATURE_REPORT_SIZE;
 
@@ -703,9 +709,9 @@ class UiapduinoProcessor {
 
         // 版の違いを先に見る。版が違えばコマンドの意味ごと違うので、
         // バージョン番号の一致不一致を語っても利用者の役に立たない。
-        if (variant !== SKETCH_VARIANT) {
+        if (variant !== this.sketchVariant) {
             const found = VARIANT[variant] || `番号 ${variant} の版`;
-            const want = VARIANT[SKETCH_VARIANT] || `番号 ${SKETCH_VARIANT} の版`;
+            const want = VARIANT[this.sketchVariant] || `番号 ${this.sketchVariant} の版`;
             console.error(
                 `[uiapduino] この基板には${found}のスケッチが焼かれています。` +
                 `この拡張機能が使えるのは${want}です。` +
@@ -1105,7 +1111,7 @@ class UiapduinoProcessor {
 // import UiapduinoProcessor, {CMD} from './uiapduinoProcessor'; と受ける。
 export default UiapduinoProcessor;
 export {
-    CMD, MOUSE_BUTTON, REASON, MARKER, RSP, PROTOCOL_VERSION, SKETCH_VARIANT, VARIANT,
+    CMD, MOUSE_BUTTON, REASON, MARKER, RSP, PROTOCOL_VERSION, VARIANT,
     // 書き込みブロックが、焼いた後に基板が戻ってきたかを見るのに使う。
     DEVICE_FILTER
 };
