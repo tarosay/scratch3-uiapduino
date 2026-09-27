@@ -55,7 +55,7 @@ import uiapduinoConnectionBadgeIconURL from './uiapduino/usb-hid-white.svg';
 import uiapduinoRemap3IconURL from './uiapduino/uiapduino-remap3.png';
 import uiapduinoRemap3InsetIconURL from './uiapduino/uiapduino-remap3-small.png';
 
-// UIAPduino 拡張機能のバージョン。カードの説明の後ろに「 (v0.3.0)」の形で付ける。
+// UIAPduino 拡張機能のバージョン。カードの説明の後ろに「 (v0.3.1)」の形で付ける。
 // Xcratch 版のカードと同じ出し方にするため (xcratch/src/gui/.../entry/createEntry.js)。
 //
 // 番号は xcratch/package.json の version を読む。README の決まりで、これが

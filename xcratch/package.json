@@ -1,6 +1,6 @@
 {
   "name": "xcx-uiapduino",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "UIAPduino extension for Xcratch",
   "license": "BSD-3-Clause",
   "scripts": {
