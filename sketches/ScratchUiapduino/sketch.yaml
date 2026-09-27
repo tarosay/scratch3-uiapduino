@@ -21,19 +21,20 @@
 # 2 つのプロファイルは pwm だけが違う。同じ .ino から 2 つの版を作るため。
 # 既定は HID 版。Remap3 版は --profile uiapduino-remap3 でビルドする。
 # どちらの版になったかはスケッチ側の SKETCH_VARIANT が Tools → PWM から決める。
+#
+# コアの版（platforms）はわざと書いていない。書くとその版に固定され、
+# インストール済みのコアではなく固定した版でビルドされる。
+# コアは常に最新を使い、コアが上がるたびに .bin を作り直して配る。
+# 利用者はこのスケッチをビルドしないので、これが効くのは .bin を作るときだけ。
+# 以前は固定していたが、固定先が 3 回取り残された（1.2.8、1.2.9、1.2.12）。
+# 1.2.12 のままでは D11 (PD1) が SWIO のままで IO として働かなかった。
 
 profiles:
   uiapduino:
     notes: UIAPduino (HID ProMicro CH32V003) / Keyboard+Mouse+WebHID / HID 版
     fqbn: UIAP_HID:ch32v:CH32V003:pnum=V14,usb=kbdweb,opt=oslto,pwm=default,xserial=none
-    platforms:
-      - platform: UIAP_HID:ch32v (1.2.12)
-        platform_index_url: https://raw.githubusercontent.com/tarosay/board_manager_files/main/package_uiap_hid_index.json
   uiapduino-remap3:
     notes: UIAPduino (HID ProMicro CH32V003) / Keyboard+Mouse+WebHID / Remap3 版
     fqbn: UIAP_HID:ch32v:CH32V003:pnum=V14,usb=kbdweb,opt=oslto,pwm=remap3,xserial=none
-    platforms:
-      - platform: UIAP_HID:ch32v (1.2.12)
-        platform_index_url: https://raw.githubusercontent.com/tarosay/board_manager_files/main/package_uiap_hid_index.json
 
 default_profile: uiapduino
