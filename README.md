@@ -13,6 +13,16 @@ Scratch 3.0 から **UIAPduino** を USB-HID (WebHID) で操作する拡張機�
 https://tarosay.github.io/scratch3-uiapduino/uiapduino.mjs
 ```
 
+**PWM を 8 本使う「UIAPduino Remap3」もあります。** ブロックは同じで、PWM を出せるピンが
+5 本（2 / 5 / A1 / A2 / A3）から 8 本（3 / 5 / 9 / TX / RX / A1 / A2 / A3）に増えます。
+**基板の LED（D2）は、Remap3 版では点灯と消灯だけになります。**
+デスクトップ版では、拡張機能の一覧に 2 枚のカードが並びます。
+
+```
+https://tarosay.github.io/scratch3-uiapduino/uiapduino-remap3.mjs
+```
+
+利用者向けの案内は [公開ページ](https://tarosay.github.io/scratch3-uiapduino/) にあります。
 Xcratch 版の作り方は [`xcratch/README.md`](xcratch/README.md) にあります。
 
 デスクトップ版の構成は [scratch3-tello](https://github.com/tarosay/scratch3-tello) と同じ
@@ -114,6 +124,7 @@ Google Chrome 151.0.7922.137 (x86_64)
 | キーボードのブロック | **全ブロック実機確認済み**（タイプ・キー・`押しながら〔 〕`） |
 | サーボのブロック | バージョン 6 で追加。**SG-90 で実機確認済み**（可動域を実測して duty 上限を 29 に決めた） |
 | 距離計のブロック | バージョン 6 で追加。**HC-SR04 で実機確認済み** |
+| シリアル通信のブロック | バージョン 7 で追加。**GNSS ロガー（NMEA を受信してキーボードでエディタに打つ）で実機確認済み** |
 | NeoPixel のブロック | バージョン 8 で追加。**WS2812B 12 連リングで実機確認済み**（2026-08-13）。色の並びの補正は 6 通りとも実機確認済み（2026-08-31） |
 | 書き込みのブロック | v0.2.4 で追加。**Xcratch 版で実機確認済み**（2026-08-14）。プロトコル 5 の基板を、パレットのブロックだけで焼き直せた |
 | WebHID 通信層 | **実機で確認済み**（接続・切断・再接続・入出力） |
@@ -130,6 +141,7 @@ Google Chrome 151.0.7922.137 (x86_64)
 | Xcratch 版の抜線 | 押しっぱなしの解除はブラウザではできないが、**実機では問題にならなかった** |
 | プロジェクトの相互運用 | Xcratch で保存した `.sb3` をデスクトップ版で開けることを確認済み |
 | スケッチの版の照合 | PING の上位バイトで名乗る。版は HID 版 (0) と Remap3 版 (1)。**Remap3 版は Xcratch と実機で 8 本すべての PWM 出力を確認済み。デスクトップ版の Remap3 版も実機で確認済み** |
+| D11 (PD1) | v0.3.1 から使える（コア 1.2.15 でビルド）。**HID 版・Remap3 版とも、Xcratch 版で出力と入力を実機確認済み**（2026-09-28） |
 
 **ピン操作のブロックは実機で確認済みです。** そのほか以下も確認しています。
 
@@ -209,16 +221,22 @@ Google Chrome 151.0.7922.137 (x86_64)
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3-small.png` | Remap3 版のカードの小さな絵 (80x80、背景透明。Xcratch 版とデスクトップ版の両方)。`uiapduino-small.png` の線を `#3F51B5` にしたもの |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-remap3.png` | Remap3 版のカードの絵 (600x372。Xcratch 版とデスクトップ版の両方)。`uiapduino.png` の緑を `#3F51B5` の青に置き換えたもの |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/SketchWrite.png` | 書き込みブロックのアイコン (80x80) |
+| `scratch-gui/src/lib/libraries/extensions/uiapduino/keyboard-small.png` | キーボードのブロックのアイコン (80x80)。`index.js` に base64 で埋め込んである |
+| `scratch-gui/src/lib/libraries/extensions/uiapduino/mouse-small.png` | マウスのブロックのアイコン (80x80)。`index.js` に base64 で埋め込んである |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/uiapduino-illustration.png` | 接続モーダル用の画像 (266x165) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/usb-hid-white.svg` | 接続バッジの USB マーク (20x20) |
 | `scratch-gui/src/lib/libraries/extensions/uiapduino/messages.js` | GUI 側の日本語訳（`ja` / `ja-Hira`） |
 | `sketches/ScratchUiapduino/ScratchUiapduino.ino` | デバイス側スケッチ |
+| `sketches/ScratchUiapduino/UIAPSerial.h` / `.cpp` | シリアル通信。受信バッファだけ 64 → 256 バイトに広げてある |
 | `sketches/ScratchUiapduino/sketch.yaml` | ボードと Tools メニューの設定 |
 | `sketches/ScratchUiapduino.ino.bin` | 上をビルドしたもの（HID 版）。`sketchBin.js` の元 |
 | `sketches/ScratchUiapduino-remap3.ino.bin` | 同じ `.ino` を Tools → PWM = TIM2 Remap3 でビルドしたもの。`sketchBinRemap3.js` の元 |
 | `build-scratch3-uiapduino.ps1` | ビルドスクリプト |
 | `xcratch/` | Xcratch 版のビルド環境（詳細は [`xcratch/README.md`](xcratch/README.md)） |
 | `docs/uiapduino.mjs` | **配っている Xcratch 版のモジュール**。GitHub Pages が `/docs` を公開している |
+| `docs/uiapduino-remap3.mjs` | 同じく Remap3 版 |
+| `docs/index.html` | 公開ページ（利用者向けの案内） |
+| `docs/scratch3-*-spec.md` | 設計の記録（キーボード・書き込み・NeoPixel・接続フロー） |
 | `README.md` / `LICENSE` | このファイルとライセンス |
 
 `xcratch/` の下にブロックの実装はありません。ビルドのたびに上のファイルを複製して
@@ -236,8 +254,8 @@ Xcratch 版は版ごとに 1 枚ずつ `.mjs` を作ります。
 `uiapduinoProcessor.js` だけを直せば済みます。
 
 `ScratchUiapduino.ino` はデバイス側で動くもので、**Scratch のビルドには含まれません。**
-ただし、これをビルドした `.bin` は `sketchBin.js` として**拡張機能に同梱**してあり、
-[書き込みブロック](#書き込み方法)がそれを基板へ流し込みます。
+ただし、これをビルドした `.bin` は `sketchBin.js`（Remap3 版は `sketchBinRemap3.js`）として
+**拡張機能に同梱**してあり、[書き込みブロック](#-スケッチを書き込むブロックv024)がそれを基板へ流し込みます。
 
 ### ✏️ 上流ファイルへのパッチ（Scratch Foundation / MIT のコードを改変）
 
@@ -283,10 +301,10 @@ Usage Page がベンダー定義であることが重要です。キーボード
 | 方向 | 種別 | サイズ |
 |---|---|---|
 | Scratch → UIAPduino | Feature Report (EP0) | 32 バイト |
-| UIAPduino → Scratch | Input Report (EP1 IN) | 8 バイト |
+| UIAPduino → Scratch | Input Report (EP3 IN) | 8 バイト |
 
 Input Report のエンドポイントは USB 設定によって変わります
-（`WebHID Only` は EP1、`Keyboard+Mouse+WebHID` は EP3）。
+（今の `Keyboard+Mouse+WebHID` は EP3、バージョン 1 の `WebHID Only` は EP1）。
 ホスト側からは見えないので Scratch 側の実装には影響しません。
 
 Feature Report は `arduino_core_ch32` v1.1.5 以降で 16 → 32 バイトに拡張されました。
@@ -491,6 +509,12 @@ Tello の「コマンドを送る → 応答を待つ → 次を送る」と同�
 | `0x52` | コマンド応答 |
 | `0x50` | コンソール出力（`hid.Print` / `hid.Println`） |
 | `0x44` | デバイスログ |
+| `0x53` | 準備完了（`Hid.h` の Ready プロトコル）。起動したときに 1 回だけ送る |
+| `0x54` | シリアル受信の通知。応答ではなく、受信があるとデバイスが勝手に送る（バージョン 7〜） |
+
+`0x54` は「読むものがある」ことだけを伝えます。Scratch が `SERIAL_READ` で読みに来るまでは
+次を送りません。読んだあとも残っていれば、また送ります。コマンドの応答を送っている間は
+送らないので、応答が上書きされて消えることはありません。
 
 コマンド応答（`0x52`）の中身:
 
@@ -522,6 +546,9 @@ RUN/STOP が使用中のため、Scratch 拡張は衝突しない `0x20` 以降�
 | `0x25` | ANALOG_READ | pin | DATA(2) → END |
 | `0x26` | SERVO | pin, duty(0-255), 周波数Hz uint16LE | OK |
 | `0x27` | DISTANCE | Trig, Echo | DATA(2) → END（往復時間 µs / 測定不能は 0） |
+| `0x28` | SERIAL_BEGIN | ボーレート uint32LE | OK（0 は ERR） |
+| `0x29` | SERIAL_WRITE | バイト数, 中身（最大 30 バイト） | OK（`SERIAL_BEGIN` の前は ERR） |
+| `0x2A` | SERIAL_READ | 最大バイト数（最大 29） | DATA × n → END（先頭 1 バイトが読めた数、続けて中身。`SERIAL_BEGIN` の前は ERR） |
 | `0x2F` | PANIC | なし | OK |
 | `0x30` | KEY_TEXT | flags, ASCII（0 終端） | OK |
 | `0x31` | KEY_WRITE | キーコード | OK |
@@ -685,6 +712,8 @@ size_t KeyboardClass::press(uint8_t key) {
 | v0.2.2 | 2026-08-11 | 7 |
 | v0.2.3 | 2026-08-13 | 8 |
 | v0.2.4 | 2026-08-14 | 8 ← **据え置き。焼き直し不要** |
+| v0.2.5 | 2026-08-31 | 8 ← 据え置き。スケッチは変わっていない |
+| v0.3.0 | 2026-09-27 | 8 ← 据え置き。スケッチは変わったが、コマンドは同じなので前の基板も繋がる |
 
 2 と 4 はコミットにすら残っていません。手元の検証のたびに機械的に上げたためで、
 公開番号を無駄に消費していました（2026-08-08 に指摘を受けて方針を変更）。
@@ -867,8 +896,9 @@ Scratch にフォーカスが残ったままだと、送ったキーが Scratch 
 確実に離す役目はデバイス側の見張りが負います。
 
 見張りの起点は「最後のコマンド」なので、時間のかかる移動の途中で離れることはありません。
-「押したままにする」→「1 秒待つ」→「離す」は 5 秒以内なので通ります。
-「押したままにする」だけ実行して手で何か操作する、という使い方は 5 秒で離れます。
+囲みブロックの中身が次々にコマンドを送っている間は、押したままが続きます。
+**中身が 5 秒以上コマンドを送らないと離れます。** 囲みの中で 5 秒以上待つと、
+その間に離れます。
 
 **マウスが暴れているとき、停止ボタンを押すこと自体が難しくなります。**
 これはブロック側では解決できません。緑の旗を押す前に、キーボードだけで
@@ -914,7 +944,9 @@ Chromium の内部状態も Scratch 側の JS のドラッグ処理も、両方�
 座標はカーソルの現在位置に合わせます。掴んだままの要素に届かせるためです。
 
 **押しっぱなしの心当たりがないときは呼びません。**
-`マウスの [左] ボタンを押したままにする` を送った後だけです。
+呼ぶのは、`マウスの [左] ボタンでドラッグしながら〔 〕` か
+`キーボードの [Ctrl▼] を押しながら〔 〕` の中身が動いている最中に抜かれたときだけです
+（`index.js` の `_inputHeld`）。
 
 #### 結論：「ケーブルを抜く」が保証すること
 
@@ -986,20 +1018,8 @@ mousedown を受け取ったのが Chromium なのだから、Chromium が残る
 
 #### ⛔ OS への入力注入は実装したが、捨てた
 
-`user32` の `keybd_event` / `mouse_event` を PowerShell から P/Invoke する実装を
-一度作りましたが、**採用していません。**
-
-**Avast が `IDP.HELU.PSE85`（コマンドライン検出）でブロックします。**
-
-| 要素 | ウイルス対策ソフトから見た意味 |
-|---|---|
-| `powershell.exe -EncodedCommand <base64>` | 難読化されたコマンド。最も警戒される形 |
-| `Add-Type` による C# の動的コンパイル | その場でコードを生成して実行 |
-| `user32.dll` の入力 API を P/Invoke | キー入力・マウス操作の注入 |
-
-マルウェアの典型パターンそのものなので、**検出される方が正しい動作です。**
-学校で使うツールがウイルス警告を出すのは通りません。
-そして上記のとおり、**そもそも OS 全体の問題ではなかったので、やる必要もありませんでした。**
+上の「試して捨てた案」の 1 は、実装まで済ませてから捨てました。
+Avast に検出されたのが理由で、**そもそも OS 全体の問題ではなかったので、やる必要もありませんでした。**
 
 試す過程で分かったことを 2 つ残しておきます。
 
@@ -1072,14 +1092,6 @@ Scratch 側 `index.js` の `_moveTimeout()` が**同じ式**で応答待ち時�
 - 囲みブロックの中身の途中でスクリプトが止まると、修飾キーが押されたまま残ります。
   停止ボタンなら `PANIC` が拾い、それ以外の経路はデバイス側の見張り（5 秒）が受けます。
 
-`sketches/ScratchUiapduino/ScratchUiapduino.ino`
-
-```
-sketches/ScratchUiapduino/
-  ScratchUiapduino.ino   … 本体
-  sketch.yaml            … ボードと Tools メニューの設定
-```
-
 ### スケッチの書き込みについて
 
 #### ⚠ 緑の旗からは焼けません
@@ -1143,10 +1155,10 @@ https://github.com/tarosay/board_manager_files/raw/main/package_uiap_hid_index.j
 書き込み先を順に探し、`Found UIAPduino Pro Micro CH32V003 V1.4 Bootloader` を
 見つけて、そこへ `.bin` を USB 経由で流し込みます。
 
-##### 書き込み設定（当時の Tools 設定）
+#### スケッチのビルド設定（`sketch.yaml`）
 
-**`sketch.yaml` に固定してあるので、手で設定し直す必要はありません。**
-Arduino IDE 2.x はスケッチを開いたときにこのプロファイルを読みます。
+**Tools の設定は `sketch.yaml` に書いてあるので、手で設定し直す必要はありません。**
+Arduino IDE 2.x も arduino-cli も、スケッチを開いたときにこのプロファイルを読みます。
 
 参考までに、`sketch.yaml` の `fqbn` は以下と対応します。
 
@@ -1168,7 +1180,7 @@ PWM の設定は、どちらを選んでもビルドは通ります。**どち�
 同梱の `UIAPSerial.h` / `.cpp` で行っています。
 
 コアの版は `sketch.yaml` に書いていません。インストール済みのコアでビルドされます。
-**1.2.15 以降が必要です**（理由は「[同梱スケッチを作り直す](#同梱スケッチを作り直す)」）。
+**1.2.15 以降が必要です**（理由は「[コアは常に最新を使う](#コアは常に最新を使う)」）。
 
 #### 同梱スケッチを作り直す
 
@@ -1262,7 +1274,14 @@ Scratch 側の `getDevices()` が拾う余地をなくすことでした。
 | バージョン 5（大文字と記号の修正） | 10012 / 16384 (61%) | 272 / 2048 (13%) |
 | バージョン 6（サーボ + 距離計） | 10504 / 16384 (64%) | 272 / 2048 (13%) |
 | バージョン 7（シリアル通信） | 11148 / 16384 (68%) | 532 / 2048 (25%) |
-| バージョン 8（NeoPixel） | **12040 / 16384 (73%)** | **744 / 2048 (36%)** |
+| バージョン 8（NeoPixel） | 12040 / 16384 (73%) | 744 / 2048 (36%) |
+| バージョン 8（v0.3.1 の同梱スケッチ・HID 版。コア 1.2.15） | **12068 / 16384 (73%)** | **744 / 2048 (36%)** |
+| バージョン 8（v0.3.1 の同梱スケッチ・Remap3 版。コア 1.2.15） | **12640 / 16384 (77%)** | **744 / 2048 (36%)** |
+
+数字は arduino-cli が表示する値です。**実際の `.bin` はこれより 164 バイト大きくなります**
+（起動コードの `.init` 160 バイトと、グローバルのコンストラクタを呼ぶ `.init_array` 4 バイトが
+数に入らないため）。v0.3.1 の `.bin` は HID 版 12,232 バイト、
+Remap3 版 12,804 バイトです。
 
 サーボと距離計の 2 つで **+492 バイト**、RAM は増減なしでした。
 
@@ -1428,8 +1447,11 @@ PWM 中のピンを普通の GPIO に戻せます。
 
 `サーボ [2▼] を [90] 度にする`（バージョン 6 で追加）。
 
-ピンは数値入力ではなく**メニュー**にしてあります。PWM を出せるのは 5 本だけで、
-それ以外のピンを選べる形にすると「繋いだのに動かない」を試させることになるためです。
+ピンは数値入力ではなく**メニュー**にしてあります。PWM を出せるのは HID 版で 5 本、
+Remap3 版で 8 本だけで、それ以外のピンを選べる形にすると「繋いだのに動かない」を
+試させることになるためです。
+
+HID 版のメニュー（既定は `2`）:
 
 | メニュー表記 | Arduino 番号 | ポート | タイマー |
 |---|---|---|---|
@@ -1438,6 +1460,24 @@ PWM 中のピンを普通の GPIO に戻せます。
 | `A1` | **0** | PA1 | TIM1-CH2 |
 | `A2` | **6** | PC4 | TIM1-CH4 |
 | `A3` | **12** | PD2 | TIM1-CH1 |
+
+Remap3 版のメニュー（既定は `5`）。**`2` はありません。** Remap3 版ではオンボード LED の
+D2 が PWM を出せないためです。
+
+| メニュー表記 | Arduino 番号 | ポート | タイマー |
+|---|---|---|---|
+| `3` | 3 | PC1 | TIM2（基板上に 2.2kΩ のプルアップあり） |
+| `5` | 5 | PC3 | TIM1 |
+| `9` | 9 | PC7 | TIM2 |
+| `TX` | **15** | PD5 | TIM2（シリアルの Tx と同じ足） |
+| `RX` | **16** | PD6 | TIM2（シリアルの Rx と同じ足） |
+| `A1` | **0** | PA1 | TIM1 |
+| `A2` | **6** | PC4 | TIM1 |
+| `A3` | **12** | PD2 | TIM1 |
+
+`TX` / `RX` は、シリアル通信を始めた後は PWM を出せません（デバイスが `RSP_ERR` で弾きます）。
+`3` はプルアップがあるので、PWM を止めて入力に戻すと High 側へ引かれ、LED を繋いでいると
+うっすら光ることがあります。
 
 **表記と Arduino 番号が食い違って見えますが、間違いではありません。**
 基板のシルクが `PA1 = A1` / `PC4 = A2` / `PD2 = A3` だからです。
@@ -1545,8 +1585,17 @@ Scratch の利用者にそれはできません。設定ブロックを 1 つ置
 
 **残る制約は消せません。** 同じタイマーのピンでサーボとアナログ出力を同時に使うと、
 後から出した方の周波数に揃います。TIM1 は D0 / D5 / D6 / D12 を共有しているためで、
-ハードウェアの制約です。実用上は、LED の D2 が TIM2 単独、サーボ向けの
-D5 / A1 / A2 / A3 が TIM1 なので、普通の組み合わせではぶつかりません。
+ハードウェアの制約です。
+
+| 版 | TIM1 | TIM2 |
+|---|---|---|
+| HID 版 | D0 (A1) / D5 / D6 (A2) / D12 (A3) | D2（LED）だけ |
+| Remap3 版 | D0 (A1) / D5 / D6 (A2) / D12 (A3) | D3 / D9 / D15 (TX) / D16 (RX) |
+
+HID 版では LED の D2 が TIM2 単独なので、LED の明るさとサーボは普通の組み合わせでは
+ぶつかりません。**Remap3 版では TIM2 も 4 本で共有します。** サーボを 3 / 9 / TX / RX に、
+アナログ出力を同じ TIM2 の別のピンに出すと、周波数が揃ってしまいます。
+サーボは TIM1 側、アナログ出力は TIM2 側、のように分けてください。
 
 #### 動き終わるのを待ちません
 
@@ -1912,7 +1961,7 @@ WS2812B は 1 個を白で全開にすると 60mA ほど流れます。**64 個�
 ```
 
 **Arduino IDE を持っていなくても基板を焼けます。** 使い方は
-[書き込み方法](#書き込み方法)を見てください。
+「[まず基板にスケッチを書き込みます](#-まず基板にスケッチを書き込みます)」を見てください。
 
 パレットの末尾と、**スケッチが噛み合わないときの説明の中**の 2 か所に出ます。
 後者が本来の置き場所です。「合いません、書き込み直してください」と言われた画面から、
@@ -1920,8 +1969,10 @@ WS2812B は 1 個を白で全開にすると 60mA ほど流れます。**64 個�
 
 #### 焼くのは「拡張機能に同梱してあるスケッチ」です
 
-`.bin` は `sketchBin.js` として拡張機能の中にあります。**だから拡張機能とスケッチの版が
-ずれません。** 拡張機能が新しくなれば、焼かれるスケッチも必ずその版のものになります。
+`.bin` は `sketchBin.js`（Remap3 版は `sketchBinRemap3.js`）として拡張機能の中にあります。
+**だから拡張機能とスケッチの版がずれません。** 拡張機能が新しくなれば、焼かれるスケッチも
+必ずその版のものになります。HID 版の拡張機能は HID 版を、Remap3 版の拡張機能は
+Remap3 版を焼きます。
 
 ブロックの名前に出ている番号（`プロトコル 8`）は、**実際に焼かれるものの番号**です。
 拡張機能側の定数ではありません。2 つが食い違っていたら、焼かずに止まります。
@@ -1940,12 +1991,16 @@ WS2812B は 1 個を白で全開にすると 60mA ほど流れます。**64 個�
 | 状態 | 出る文字 |
 |---|---|
 | 押す前 | まだ書き込んでいません |
+| 読み込み・書き込みの準備 | 準備中 |
 | 基板を探している | 基板をさがしています |
 | 書き込み中 | 書き込み中 45% |
 | 照合中 | たしかめ中 45% |
+| 基板を再起動している | 再起動中 |
 | 完了 | 書き込めました |
 | 書き込みモードでない | 基板が書き込みモードになっていません |
 | 緑の旗から走らせた | ブロックをクリックしてください |
+| 失敗した（理由は開発者コンソール） | 書き込めませんでした |
+| 書き込み中にもう一度押した | 書き込み中です |
 
 **最初の 1 セクタだけ「たしかめ中 0%」が出るのは正常です。** 書き込み処理は
 「差分が見つかったか」で表示を切り替えるので、まっさらな基板でも 1 個目までは
@@ -2085,21 +2140,26 @@ curl -o build-scratch3-uiapduino.ps1 https://raw.githubusercontent.com/tarosay/s
 scratch-desktop/dist/
   Scratch-UIAPduino-3.29.1-Setup.exe        … インストーラ (約 163 MB)
   Scratch-UIAPduino-3.29.1-portable.zip     … インストール不要版 (約 190 MB)
-  Scratch-UIAPduino-3.29.1-sketch.zip       … デバイス側スケッチ (約 10 KB)
+  Scratch-UIAPduino-3.29.1-sketch.zip       … デバイス側スケッチ (約 23 KB)
   win-ia32-unpacked/                        … インストール不要版の中身 (約 341 MB)
     Scratch UIAPduino.exe
     resources/  locales/  *.dll  ...
 ```
 
-`sketch.zip` には `ScratchUiapduino/` フォルダごと（`.ino` と `sketch.yaml`）が入ります。
-Arduino IDE は `.ino` と同じ名前のフォルダに入っていることを要求するためです。
+`sketch.zip` には `ScratchUiapduino/` フォルダごと（`.ino`、`UIAPSerial.h` / `.cpp`、
+`sketch.yaml`）が入ります。Arduino IDE は `.ino` と同じ名前のフォルダに入っていることを
+要求するためです。
+
+**v0.2.4 からは、この zip をリリースに載せていません。** 書き込みブロックが同梱の `.bin` を
+焼くので、利用者がスケッチを取ってくる必要が無くなったためです。リリースに載せるのは
+`Setup.exe` と `portable.zip` の 2 つです。
 
 **この zip はビルドのたびに作り直されます。** 以前は手作業だったので、`.ino` を
 変えても古い zip が残り続けていました。ビルド時に `.ino` から `PROTOCOL_VERSION` を
 読んで表示するので、基板に焼くべき版が取り違いなく分かります。
 
 ```
->>> dist\Scratch-UIAPduino-3.29.1-sketch.zip (protocol 5)
+>>> dist\Scratch-UIAPduino-3.29.1-sketch.zip (protocol 8)
 ```
 
 ディレクトリ名は `win-unpacked` ではなく **`win-ia32-unpacked`** です。
@@ -2244,7 +2304,7 @@ Copyright (c) 2013,2014 Michal Ludvig <michal@logix.cz>
 
 ### 上流 Scratch のコード
 
-「✏️ 上流ファイルへのパッチ」の 3 ファイルは、Scratch のコードを改変したものです。
+「✏️ 上流ファイルへのパッチ」の表の 7 ファイルは、Scratch のコードを改変したものです。
 著作権は元の権利者に帰属し、それぞれの上流リポジトリのライセンスに従います。
 
 | 上流 | 著作権表示 |
