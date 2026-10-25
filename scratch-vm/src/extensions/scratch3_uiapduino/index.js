@@ -1577,6 +1577,31 @@ class Scratch3Uiapduino {
         // ピンは入っていないので基板では鳴らさない (どのピンか決められない)。
         this.runtime.on('PLAY_NOTE', (note, category) => this._previewNote(note, category));
 
+        /**
+         * 直前にマウス (指) が押した、または押したまま通ったのが、ピアノのキーだったか。
+         *
+         * ピアノは、左右の矢印でオクターブを変えたときにも同じ合図 (PLAY_NOTE) を出す
+         * (field_note.js の stepOctaveAnimation_)。合図だけでは、キーを弾いたのか
+         * オクターブを変えたのか区別できない。キーは 1 つずつ data-pitch の印を持った
+         * 部品で、押されたとき (mousedown) と押したまま通ったとき (mouseenter) に鳴る。
+         * 矢印は別の部品。だから、直前に触れた部品で見分ける。
+         *
+         * ポインタのイベントは、ピアノが受け取るマウスのイベントより先に届く。
+         * 捕まえる側 (capture) で聞くので、合図が来る前にここが書き換わっている。
+         * @type {boolean}
+         */
+        this._pianoKeyTouched = false;
+        if (typeof document !== 'undefined') {
+            const touch = e => {
+                this._pianoKeyTouched = !!(e.target && e.target.hasAttribute &&
+                    e.target.hasAttribute('data-pitch'));
+            };
+            document.addEventListener('pointerdown', touch, true);
+            document.addEventListener('pointerover', e => {
+                if (e.buttons & 1) touch(e);
+            }, true);
+        }
+
         // ピアノで弾いた音を記録する「メロディ」のリストを、無ければ作っておく。
         // 拡張機能を追加したとき (ここ) と、作品を開いたとき。記録しようとしたときにも
         // 作るが、そのときは編集画面の描き直しで、開いているピアノが閉じてしまう。
@@ -3769,6 +3794,8 @@ class Scratch3Uiapduino {
      */
     _previewNote (note, category) {
         if (category !== this.variant.EXTENSION_NAME) return;
+        // オクターブを変えただけのときは、鳴らさず記録もしない
+        if (!this._pianoKeyTouched) return;
         if (this._isRecordPiano()) this._recordNote(note);
         const engine = this.runtime.audioEngine;
         if (!engine) return;
@@ -3870,9 +3897,8 @@ class Scratch3Uiapduino {
     /**
      * ピアノで弾いた音を「メロディ」のリストの後ろに足す。
      *
-     * ⚠ ピアノは、左右の矢印でオクターブを変えたときにも同じ合図を出す
-     *   (scratch-blocks の field_note.js、stepOctaveAnimation_)。キーを叩いたときと
-     *   区別できないので、その音も記録される。要らなければリストから消す。
+     * オクターブを変えたときの合図は、ここへ来る前に _previewNote() が捨てている
+     * (_pianoKeyTouched を参照)。
      *
      * @param {number} note - ノート番号
      */

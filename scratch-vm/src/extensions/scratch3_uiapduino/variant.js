@@ -133,10 +133,11 @@ export const TONE_TIM2_PINS = [2];
 /**
  * 音量のブロックのメニュー。音量はタイマーごとに 1 つなので、タイマーのピンの組を並べる。
  *
- * 値はその組のピンのどれか 1 本。デバイスはピンからタイマーを決める (voiceOf())。
+ * 表記はピンのメニュー (PWM_PIN_ITEMS) と揃える。値はその組のピンのどれか 1 本で、
+ * デバイスはピンからタイマーを決める (voiceOf())。
  * @type {Array<{text: string, value: string}>}
  */
 export const TONE_TIMER_ITEMS = [
-    {text: 'D0・D5・D6・D12', value: '0'},
-    {text: 'D2', value: '2'}
+    {text: '5・A1・A2・A3', value: '5'},
+    {text: '2', value: '2'}
 ];
