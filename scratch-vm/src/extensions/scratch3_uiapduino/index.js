@@ -3867,14 +3867,54 @@ class Scratch3Uiapduino {
     /**
      * 「メロディ」のリストの中身を差し替える。上限を超えた分は捨てる。
      * @param {Array<string>} items - 1 音 1 行
+     * @param {boolean} [show] - ステージに表示されていなければ表示するか。消すときは表示しない
      */
-    _setMelodyList (items) {
+    _setMelodyList (items, show = true) {
         const list = this._melodyList();
         if (!list) return;
         list.value = items.slice(0, MELODY_LIST_MAX);
         // 立てておかないと、ステージのリストの表示が変わらない (scratch3_data.js と同じ)
         list._monitorUpToDate = false;
+        if (show) this._showMelodyList(list);
         this.runtime.emitProjectChanged();
+    }
+
+    /**
+     * 「メロディ」のリストをステージに表示する。ブロック一覧のチェックボックスを入れるのと同じ。
+     *
+     * 表示されていないと、記録した音が見えず、休符を割り込ませることもできない。
+     * 拡張機能が作ったリストは、チェックボックスが外れたまま作られる。
+     *
+     * Scratch の「リスト [ ] を表示する」と同じく、表示用の部品 (モニターのブロック) に
+     * チェックボックスの合図を送る (scratch3_data.js の changeMonitorVisibility())。
+     * 部品がまだ無ければ、作品を開くときと同じ形で先に作る (sb3.js の deserializeMonitor)。
+     *
+     * リストを作るだけの時機 (拡張機能を追加したとき・作品を開いたとき) には呼ばない。
+     * 呼ぶと、音を使わない作品のステージにもリストが出てしまう。
+     *
+     * @param {object} list - リスト (scratch-vm の Variable)
+     */
+    _showMelodyList (list) {
+        const monitors = this.runtime.monitorBlocks;
+        if (!monitors.getBlock(list.id)) {
+            monitors.createBlock({
+                id: list.id,
+                opcode: 'data_listcontents',
+                inputs: {},
+                fields: {
+                    LIST: {name: 'LIST', value: list.name, id: list.id, variableType: 'list'}
+                },
+                topLevel: true,
+                next: null,
+                parent: null,
+                shadow: false,
+                x: 0,
+                y: 0,
+                isMonitored: false
+            });
+        }
+        if (monitors.getBlock(list.id).isMonitored) return;
+        monitors.changeBlock({id: list.id, element: 'checkbox', value: true}, this.runtime);
     }
 
     /** @returns {Array<string>} 「メロディ」のリストの中身。無ければ空 */
@@ -4150,7 +4190,7 @@ class Scratch3Uiapduino {
     }
 
     clearRecordedNotes () {
-        this._setMelodyList([]);
+        this._setMelodyList([], false);
     }
 
     melodyReplace (args) {
