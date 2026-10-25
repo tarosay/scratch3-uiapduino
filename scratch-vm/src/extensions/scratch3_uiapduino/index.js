@@ -15,6 +15,7 @@
 import ArgumentType from '../../extension-support/argument-type';
 import BlockType from '../../extension-support/block-type';
 import Cast from '../../util/cast';
+import uid from '../../util/uid';
 import defaultFormatMessage from 'format-message';
 
 import UiapduinoProcessor, {
@@ -253,6 +254,93 @@ const DISTANCE_DEFAULT = {trig: 4, echo: 3};
  * @type {number}
  */
 const US_PER_CM = 58;
+
+/**
+ * テンポ (bpm) の既定値。手本の MakeCode に合わせて 120 にしてある
+ * (Scratch の「音楽」拡張機能は 60)。
+ *
+ * テンポはこの拡張機能が自分で持つ。「音楽」拡張機能のテンポは読まない。
+ * 入れていない作品でも動くようにするため。
+ * @type {number}
+ */
+const TONE_TEMPO_DEFAULT = 120;
+
+/**
+ * 音・拍・テンポの範囲。「音楽」拡張機能 (scratch3_music) と同じ値。
+ * 範囲の外は端に丸める。
+ */
+const TONE_NOTE_RANGE = {min: 0, max: 130};
+const TONE_BEAT_RANGE = {min: 0, max: 100};
+const TONE_TEMPO_RANGE = {min: 20, max: 500};
+
+/**
+ * 鳴らし方。デバイスの TONE_PLAY の mode と同じ値。
+ *
+ *   UNTIL_DONE : 予約の後ろに足し、鳴り終わるまで待つ
+ *   ONCE       : 予約を消して替え、1 回鳴らす。待たない
+ *   LOOP       : 予約を消して替え、繰り返す。待たない
+ */
+const TONE_MODE = {UNTIL_DONE: 0, ONCE: 1, LOOP: 2};
+
+/** TONE_PLAY の mode に足すと「直前の続き」になる */
+const TONE_MODE_CONTINUE = 0x80;
+
+/** TONE_PLAY 1 コマンドで送れる予約の数。7 バイト × 4 = 28 バイト ([4..31]) */
+const TONE_ENTRIES_PER_COMMAND = 4;
+
+/**
+ * 「終わるまで」のブロックを、音が鳴り終わるより何 ms 早く終えるか。
+ *
+ * ちょうど鳴り終わってから次の音を送ると、USB の往復 (12〜15ms) のぶん
+ * 音と音の間に隙間ができ、曲のテンポも遅れていく。先に終えて次の音を
+ * 予約に入れておけば、デバイスが隙間なくつなぐ。30ms は往復 2 回分。
+ * @type {number}
+ */
+const TONE_LEAD_MS = 30;
+
+/** 予約がいっぱいで受け付けられなかったとき、送り直すまで待つ時間 (ms) */
+const TONE_RETRY_MS = 50;
+
+/**
+ * 「鳴らし始める」の 1 音の長さ (ms)。デバイスが受け取れる最長。
+ *
+ * 繰り返し (LOOP) で鳴らすので止めるまで鳴り続けるが、
+ * この長さ (約 65 秒) ごとに 1 周期の頭からやり直す。
+ * @type {number}
+ */
+const TONE_HOLD_MS = 0xFFFF;
+
+/** 鍵盤を押したときに PC で鳴らす長さ (秒)。「音楽」拡張機能の鍵盤と同じ */
+const TONE_PREVIEW_SEC = 0.25;
+
+/** 鍵盤を押したときに PC で鳴らす音量 (0〜1)。矩形波はうるさいので小さめ */
+const TONE_PREVIEW_VOLUME = 0.1;
+
+/**
+ * ピアノで弾いた音を記録するリストの名前。
+ *
+ * 無ければ拡張機能がステージに作る (すべてのスプライト用)。作る時機は、拡張機能を
+ * 追加したとき、作品を開いたとき、記録しようとしたとき (_melodyList() を参照)。
+ */
+const MELODY_LIST_NAME = 'メロディ';
+
+/** リストに入れられる数。Scratch のリストの上限 (scratch3_data.js の LIST_ITEM_LIMIT) と同じ */
+const MELODY_LIST_MAX = 200000;
+
+/** エフェクト。デバイスの TONE_FX_* と同じ値 */
+const TONE_FX = {NONE: 0, VIBRATO: 1, TREMOLO: 2, WARBLE: 3};
+
+/**
+ * メロディの書き方の音名。MakeCode の MelodyStringReader の offsetLookup と同じで、
+ * A〜G を C から数えた半音の数にする。
+ */
+const MELODY_NOTE_OFFSET = {a: 9, b: 11, c: 0, d: 2, e: 4, f: 5, g: 7};
+
+/** メロディの書き方の長さの単位。`:4` で 1 拍 (MakeCode と同じ) */
+const MELODY_TICKS_PER_BEAT = 4;
+
+/** ノート番号 (0〜11) から音名を書くときの表。黒鍵は # で書く */
+const MELODY_NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 /**
  * シリアル送信 1 コマンドあたりのバイト数。
@@ -642,6 +730,21 @@ const message = {
         'ja-Hira': 'つながっている',
         en: 'connected'
     },
+    connectionStatus: {
+        ja: '接続の ようす',
+        'ja-Hira': 'せつぞくの ようす',
+        en: 'connection status'
+    },
+    connectionOn: {
+        ja: 'つながっている',
+        'ja-Hira': 'つながっている',
+        en: 'connected'
+    },
+    connectionOff: {
+        ja: '切れている',
+        'ja-Hira': 'きれている',
+        en: 'disconnected'
+    },
     pinMode: {
         ja: 'ピン [PIN] を [MODE] にする',
         'ja-Hira': 'ピン [PIN] を [MODE] にする',
@@ -708,6 +811,136 @@ const message = {
         ja: '距離計(HC-SR04)の設定 Echo [ECHO] Trig [TRIG]',
         'ja-Hira': 'きょりけい(HC-SR04)の せってい Echo [ECHO] Trig [TRIG]',
         en: 'configure rangefinder (HC-SR04): Echo [ECHO] Trig [TRIG]'
+    },
+    playNote: {
+        ja: 'ピン [PIN] で [NOTE] を [BEATS] 拍鳴らす [MODE]',
+        'ja-Hira': 'ピン [PIN] で [NOTE] を [BEATS] はくならす [MODE]',
+        en: 'play note [NOTE] on pin [PIN] for [BEATS] beats [MODE]'
+    },
+    playMelody: {
+        ja: 'ピン [PIN] でメロディ [MELODY] をテンポ [TEMPO] で鳴らす [MODE]',
+        'ja-Hira': 'ピン [PIN] でメロディ [MELODY] をテンポ [TEMPO] でならす [MODE]',
+        en: 'play melody [MELODY] on pin [PIN] at tempo [TEMPO] [MODE]'
+    },
+    recordedNotes: {
+        ja: 'ピアノ [NOTE] で弾いた音',
+        'ja-Hira': 'ピアノ [NOTE] でひいたおと',
+        en: 'notes played on piano [NOTE]'
+    },
+    clearRecordedNotes: {
+        ja: 'ピアノで弾いた音を消す',
+        'ja-Hira': 'ピアノでひいたおとをけす',
+        en: 'clear notes played on the piano'
+    },
+    melodyReplace: {
+        ja: '[TEXT] でメロディを入れ替える',
+        'ja-Hira': '[TEXT] でメロディをいれかえる',
+        en: 'replace melody with [TEXT]'
+    },
+    melodyAppend: {
+        ja: '[TEXT] をメロディの後ろに足す',
+        'ja-Hira': '[TEXT] をメロディのうしろにたす',
+        en: 'add [TEXT] to the end of melody'
+    },
+    melodyInsert: {
+        ja: '[TEXT] をメロディの [INDEX] 番目に入れる',
+        'ja-Hira': '[TEXT] をメロディの [INDEX] ばんめにいれる',
+        en: 'insert [TEXT] at [INDEX] of melody'
+    },
+    setToneVolume: {
+        ja: '[TIMER] の音量を [VOLUME] にする',
+        'ja-Hira': '[TIMER] のおんりょうを [VOLUME] にする',
+        en: 'set volume of [TIMER] to [VOLUME]'
+    },
+    playSweepEffect: {
+        ja: 'ピン [PIN] で [FROM] Hz から [TO] Hz へ [MS] ミリ秒 [FX] で鳴らす [MODE]',
+        'ja-Hira': 'ピン [PIN] で [FROM] Hz から [TO] Hz へ [MS] ミリびょう [FX] でならす [MODE]',
+        en: 'sweep pin [PIN] from [FROM] Hz to [TO] Hz in [MS] ms with [FX] [MODE]'
+    },
+    toneFxNone: {
+        ja: 'なし',
+        'ja-Hira': 'なし',
+        en: 'none'
+    },
+    toneFxVibrato: {
+        ja: 'ビブラート',
+        'ja-Hira': 'ビブラート',
+        en: 'vibrato'
+    },
+    toneFxTremolo: {
+        ja: 'トレモロ',
+        'ja-Hira': 'トレモロ',
+        en: 'tremolo'
+    },
+    toneFxWarble: {
+        ja: 'ウォーブル',
+        'ja-Hira': 'ウォーブル',
+        en: 'warble'
+    },
+    startTone: {
+        ja: 'ピン [PIN] で [FREQ] Hz を鳴らし始める',
+        'ja-Hira': 'ピン [PIN] で [FREQ] Hz をならしはじめる',
+        en: 'start [FREQ] Hz tone on pin [PIN]'
+    },
+    playSweep: {
+        ja: 'ピン [PIN] で [FROM] Hz から [TO] Hz へ [MS] ミリ秒で鳴らす [MODE]',
+        'ja-Hira': 'ピン [PIN] で [FROM] Hz から [TO] Hz へ [MS] ミリびょうでならす [MODE]',
+        en: 'sweep pin [PIN] from [FROM] Hz to [TO] Hz in [MS] ms [MODE]'
+    },
+    restBeats: {
+        ja: 'ピン [PIN] を [BEATS] 拍休む',
+        'ja-Hira': 'ピン [PIN] を [BEATS] はくやすむ',
+        en: 'rest pin [PIN] for [BEATS] beats'
+    },
+    stopTone: {
+        ja: 'ピン [PIN] の音を止める',
+        'ja-Hira': 'ピン [PIN] のおとをとめる',
+        en: 'stop tone on pin [PIN]'
+    },
+    stopAllTones: {
+        ja: 'すべての音を停止する',
+        'ja-Hira': 'すべてのおとをていしする',
+        en: 'stop all tones'
+    },
+    isTonePlaying: {
+        ja: 'ピン [PIN] の音が鳴っている',
+        'ja-Hira': 'ピン [PIN] のおとがなっている',
+        en: 'tone on pin [PIN] is playing'
+    },
+    noteFrequency: {
+        ja: '[NOTE] の周波数',
+        'ja-Hira': '[NOTE] のしゅうはすう',
+        en: 'frequency of [NOTE]'
+    },
+    setTempo: {
+        ja: 'テンポを [TEMPO] にする',
+        'ja-Hira': 'テンポを [TEMPO] にする',
+        en: 'set tempo to [TEMPO]'
+    },
+    changeTempo: {
+        ja: 'テンポを [TEMPO] ずつ変える',
+        'ja-Hira': 'テンポを [TEMPO] ずつかえる',
+        en: 'change tempo by [TEMPO]'
+    },
+    tempo: {
+        ja: 'テンポ',
+        'ja-Hira': 'テンポ',
+        en: 'tempo'
+    },
+    toneUntilDone: {
+        ja: '終わるまで',
+        'ja-Hira': 'おわるまで',
+        en: 'until done'
+    },
+    toneOnce: {
+        ja: 'バックグラウンドで一度だけ',
+        'ja-Hira': 'バックグラウンドでいちどだけ',
+        en: 'in background once'
+    },
+    toneLoop: {
+        ja: 'バックグラウンドでずっと',
+        'ja-Hira': 'バックグラウンドでずっと',
+        en: 'in background forever'
     },
     keyType: {
         ja: 'キーボードで [TEXT] と打つ',
@@ -1119,6 +1352,32 @@ class Scratch3Uiapduino {
         this._distance = Object.assign({}, DISTANCE_DEFAULT);
 
         /**
+         * 音のテンポ (bpm)。「テンポを [ ] にする」が書き換える。
+         *
+         * デバイスは拍を知らない。拍から ms への換算はここでやる。
+         * サーボの設定と同じく、プロジェクトには保存されない。
+         * @type {number}
+         */
+        this._tempo = TONE_TEMPO_DEFAULT;
+
+        /**
+         * 声 (TIM1 / TIM2) ごとに、音を止めた回数。
+         *
+         * 16 音より長いメロディは、予約に空きができるたびに残りを送り直す (_tonePlay())。
+         * 止めたことを知らせないと、空いた予約に残りを送り込んで、また鳴り出してしまう。
+         * 送っている途中でこの数が変わったら、送るのをやめる。
+         * @type {Array<number>}
+         */
+        this._toneStops = [0, 0];
+
+        /**
+         * 声ごとの、待っている途中の「終わるまで」。止めたら、待ちをすぐ終える。
+         * @type {Array<Set<Function>>}
+         */
+        this._toneWaiters = [new Set(), new Set()];
+
+
+        /**
          * 基板のスケッチが噛み合わなかったときの中身。噛み合っていれば null。
          *
          * `{reason, version, variant}` を持つ。getInfo() がこれを見て、
@@ -1311,6 +1570,20 @@ class Scratch3Uiapduino {
         // Scratch の停止ボタンを押すことすらできなくなる。
         this.runtime.on(this.runtime.constructor.PROJECT_STOP_ALL, () => this._releaseInput());
 
+        // 鍵盤を押したとき、その音を PC で鳴らす (「音楽」拡張機能と同じ)。
+        //
+        // 鍵盤は scratch-blocks の FieldNote で、キーが押されると GUI が
+        // PLAY_NOTE を出す。中身は音の番号と、そのブロックの拡張機能の名前だけ。
+        // ピンは入っていないので基板では鳴らさない (どのピンか決められない)。
+        this.runtime.on('PLAY_NOTE', (note, category) => this._previewNote(note, category));
+
+        // ピアノで弾いた音を記録する「メロディ」のリストを、無ければ作っておく。
+        // 拡張機能を追加したとき (ここ) と、作品を開いたとき。記録しようとしたときにも
+        // 作るが、そのときは編集画面の描き直しで、開いているピアノが閉じてしまう。
+        // ここで作っておけば、ピアノが開いていないうちに済む。
+        this._melodyList();
+        this.runtime.on(this.runtime.constructor.PROJECT_LOADED, () => this._melodyList());
+
         // アプリを閉じるときにも離す。
         //
         // ただしこれは best-effort でしかない。beforeunload はページの後始末を
@@ -1344,7 +1617,8 @@ class Scratch3Uiapduino {
         this.processor.resetQueue();
         return this.processor.request(CMD.PANIC)
             .catch(() => {})
-            .then(() => this._neoTurnOff());
+            .then(() => this._neoTurnOff())
+            .then(() => this._toneStopAll(true));
     }
 
     /**
@@ -1471,6 +1745,15 @@ class Scratch3Uiapduino {
                     opcode: 'isConnected',
                     text: this._getText('isConnected'),
                     blockType: BlockType.BOOLEAN
+                },
+                {
+                    // 「つながっている」は真偽のブロックなので、ステージに表示できない
+                    // (チェックボックスが付くのは引数の無い値のブロックだけ)。
+                    // 切れても気づけないので、同じことを文字で返す値のブロックを置く。
+                    // 「書き込みの ようす」と並べて表示できる。
+                    opcode: 'connectionStatus',
+                    text: this._getText('connectionStatus'),
+                    blockType: BlockType.REPORTER
                 },
                 '---',
                 {
@@ -1654,6 +1937,318 @@ class Scratch3Uiapduino {
                             defaultValue: DISTANCE_DEFAULT.trig
                         }
                     }
+                },
+                '---',
+                // ── 音 (圧電ブザー) ─────────────────────────────────────────
+                //
+                // 手本は MakeCode (micro:bit) の「音楽」。音の長さと切り替えは
+                // デバイスが持ち、ここは Hz・拍・ms への換算だけをする。
+                //
+                // ピンをブロックごとに持たせてあるのは、タイマーの違うピン同士なら
+                // 2 音を同時に鳴らせるため (MakeCode は出力が 1 か所)。
+                // ピンのメニューはアナログ出力・サーボと同じ SERVO_PIN。
+                {
+                    opcode: 'playNote',
+                    text: this._getText('playNote'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
+                            menu: 'SERVO_PIN'
+                        },
+                        NOTE: {
+                            type: ArgumentType.NOTE,
+                            defaultValue: 60
+                        },
+                        BEATS: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '1',
+                            menu: 'BEATS'
+                        },
+                        MODE: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: TONE_MODE.UNTIL_DONE,
+                            menu: 'TONE_MODE'
+                        }
+                    }
+                },
+                {
+                    // MakeCode の 8×8 のマス目は Scratch の欄では作れないので、
+                    // MakeCode が内部で使っている文字で書く (_parseMelody() を参照)。
+                    // テンポは MakeCode と同じく、全体のテンポも変える。
+                    opcode: 'playMelody',
+                    text: this._getText('playMelody'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
+                            menu: 'SERVO_PIN'
+                        },
+                        MELODY: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'C4 D4 E4 F4 G4 A4 B4 C5'
+                        },
+                        TEMPO: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: TONE_TEMPO_DEFAULT
+                        },
+                        MODE: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: TONE_MODE.UNTIL_DONE,
+                            menu: 'TONE_MODE'
+                        }
+                    }
+                },
+                {
+                    // 止めるまで鳴り続ける。サイレンのように、ループの中で
+                    // 少しずつ Hz を変えて効果音を作るのにも使う。
+                    opcode: 'startTone',
+                    text: this._getText('startTone'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
+                            menu: 'SERVO_PIN'
+                        },
+                        FREQ: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 262
+                        }
+                    }
+                },
+                {
+                    // デバイスにとっては「始めと終わりの Hz が違う音」でしかない。
+                    // 普通の音と同じ予約に入る。変え方はリニアだけ。
+                    opcode: 'playSweep',
+                    text: this._getText('playSweep'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
+                            menu: 'SERVO_PIN'
+                        },
+                        FROM: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 3789
+                        },
+                        TO: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 3613
+                        },
+                        MS: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 2000
+                        },
+                        MODE: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: TONE_MODE.UNTIL_DONE,
+                            menu: 'TONE_MODE'
+                        }
+                    }
+                },
+                {
+                    // エフェクト付き。上のブロックとは別にしてある (エフェクトは試作)
+                    opcode: 'playSweepEffect',
+                    text: this._getText('playSweepEffect'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
+                            menu: 'SERVO_PIN'
+                        },
+                        FROM: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 3789
+                        },
+                        TO: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 3613
+                        },
+                        MS: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 2000
+                        },
+                        FX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: TONE_FX.VIBRATO,
+                            menu: 'TONE_FX'
+                        },
+                        MODE: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: TONE_MODE.UNTIL_DONE,
+                            menu: 'TONE_MODE'
+                        }
+                    }
+                },
+                {
+                    // 休符も予約に入れる。「[ ] 秒待つ」で休むと、前の音を
+                    // 先読みで送ってある分 (TONE_LEAD_MS) だけ休符が縮む。
+                    opcode: 'restBeats',
+                    text: this._getText('restBeats'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
+                            menu: 'SERVO_PIN'
+                        },
+                        BEATS: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '1',
+                            menu: 'BEATS'
+                        }
+                    }
+                },
+                {
+                    opcode: 'stopTone',
+                    text: this._getText('stopTone'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
+                            menu: 'SERVO_PIN'
+                        }
+                    }
+                },
+                {
+                    opcode: 'stopAllTones',
+                    text: this._getText('stopAllTones'),
+                    blockType: BlockType.COMMAND
+                },
+                {
+                    opcode: 'isTonePlaying',
+                    text: this._getText('isTonePlaying'),
+                    blockType: BlockType.BOOLEAN,
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.PWM_DEFAULT_PIN,
+                            menu: 'SERVO_PIN'
+                        }
+                    }
+                },
+                {
+                    // 「鳴らし始める」の Hz の欄に入れて使う。鍵盤で選んだ音を Hz にする。
+                    opcode: 'noteFrequency',
+                    text: this._getText('noteFrequency'),
+                    blockType: BlockType.REPORTER,
+                    arguments: {
+                        NOTE: {
+                            type: ArgumentType.NOTE,
+                            defaultValue: 60
+                        }
+                    }
+                },
+                {
+                    // このブロックのピアノで押した音だけを「メロディ」のリストに記録する。
+                    // ほかのブロックのピアノは、PC で鳴るだけ (_isRecordPiano() を参照)。
+                    // 返すのは記録した音の並び (リストの中身) の文字。
+                    //
+                    // ブロックを自動で足す形にしなかったのは、足すと編集画面が
+                    // 描き直されて、開いているピアノが閉じるため。
+                    opcode: 'recordedNotes',
+                    text: this._getText('recordedNotes'),
+                    blockType: BlockType.REPORTER,
+                    arguments: {
+                        NOTE: {
+                            type: ArgumentType.NOTE,
+                            defaultValue: 60
+                        }
+                    }
+                },
+                {
+                    opcode: 'clearRecordedNotes',
+                    text: this._getText('clearRecordedNotes'),
+                    blockType: BlockType.COMMAND
+                },
+                {
+                    // Scratch には文字列を区切ってリストにするブロックが無いので、ここで用意する。
+                    // Scratch のリストのブロックに倣って、入れ方ごとに分けてある。
+                    opcode: 'melodyReplace',
+                    text: this._getText('melodyReplace'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        TEXT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'C4 D4 E4'
+                        }
+                    }
+                },
+                {
+                    opcode: 'melodyAppend',
+                    text: this._getText('melodyAppend'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        TEXT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'C4 D4 E4'
+                        }
+                    }
+                },
+                {
+                    opcode: 'melodyInsert',
+                    text: this._getText('melodyInsert'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        TEXT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '-'
+                        },
+                        INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    // 音量はタイマーごとに 1 つ。だからピンではなく、タイマーのピンの組を選ぶ
+                    opcode: 'setToneVolume',
+                    text: this._getText('setToneVolume'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        TIMER: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: this.variant.TONE_TIMER_ITEMS[0].value,
+                            menu: 'TONE_TIMER'
+                        },
+                        VOLUME: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 255
+                        }
+                    }
+                },
+                {
+                    opcode: 'setTempo',
+                    text: this._getText('setTempo'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        TEMPO: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: TONE_TEMPO_DEFAULT
+                        }
+                    }
+                },
+                {
+                    opcode: 'changeTempo',
+                    text: this._getText('changeTempo'),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        TEMPO: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 20
+                        }
+                    }
+                },
+                {
+                    opcode: 'tempo',
+                    text: this._getText('tempo'),
+                    blockType: BlockType.REPORTER
                 },
                 '---',
                 // ── シリアル通信 (Tx = D15 / Rx = D16) ──────────────────────
@@ -2250,6 +2845,33 @@ class Scratch3Uiapduino {
                     acceptReporters: true,
                     items: this.variant.PWM_PIN_ITEMS
                 },
+                // 手本の MakeCode と同じ分数。値は文字列のまま渡り、_toneBeats() が数にする。
+                // 変数や計算を入れれば、メニューに無い拍 (3 や 0.75) も使える。
+                BEATS: {
+                    acceptReporters: true,
+                    items: ['1', '1/2', '1/4', '1/8', '1/16', '2', '4']
+                },
+                TONE_TIMER: {
+                    acceptReporters: false,
+                    items: this.variant.TONE_TIMER_ITEMS
+                },
+                TONE_FX: {
+                    acceptReporters: false,
+                    items: [
+                        {text: this._getText('toneFxNone'), value: String(TONE_FX.NONE)},
+                        {text: this._getText('toneFxVibrato'), value: String(TONE_FX.VIBRATO)},
+                        {text: this._getText('toneFxTremolo'), value: String(TONE_FX.TREMOLO)},
+                        {text: this._getText('toneFxWarble'), value: String(TONE_FX.WARBLE)}
+                    ]
+                },
+                TONE_MODE: {
+                    acceptReporters: false,
+                    items: [
+                        {text: this._getText('toneUntilDone'), value: String(TONE_MODE.UNTIL_DONE)},
+                        {text: this._getText('toneOnce'), value: String(TONE_MODE.ONCE)},
+                        {text: this._getText('toneLoop'), value: String(TONE_MODE.LOOP)}
+                    ]
+                },
                 // 値は arduino_core_ch32 の Keyboard.h の定数 (KEY_MENU_ITEMS を見ること)
                 KEY: {
                     acceptReporters: true,
@@ -2758,6 +3380,10 @@ class Scratch3Uiapduino {
         return this.processor.isConnected();
     }
 
+    connectionStatus () {
+        return this._getText(this.processor.isConnected() ? 'connectionOn' : 'connectionOff');
+    }
+
     // --- 接続処理と Scratch への通知 ------------------------------------
 
     /**
@@ -2942,6 +3568,8 @@ class Scratch3Uiapduino {
     }
 
     analogWrite (args) {
+        // 音とは排他。デバイスが音を全部止めるので、送っている途中のメロディにも知らせる
+        this._toneStopped([0, 1]);
         const params = [Cast.toNumber(args.PIN), Cast.toNumber(args.VALUE)]
             .concat(this._freqBytes(PWM_FREQ_HZ));
         return this.processor.request(CMD.ANALOG_WRITE, params).catch(() => {});
@@ -3068,6 +3696,8 @@ class Scratch3Uiapduino {
      * @returns {Promise<void>} 応答が返ったら resolve。失敗しても reject しない
      */
     servo (args) {
+        // 音とは排他。デバイスが音を全部止めるので、送っている途中のメロディにも知らせる
+        this._toneStopped([0, 1]);
         const cfg = this._servo;
         const angle = Math.min(SERVO_ANGLE_MAX, Math.max(0, Cast.toNumber(args.ANGLE)));
         const pulseUs = cfg.minUs + (((cfg.maxUs - cfg.minUs) * angle) / SERVO_ANGLE_MAX);
@@ -3114,6 +3744,487 @@ class Scratch3Uiapduino {
             .request(CMD.DISTANCE, [cfg.trig, cfg.echo])
             .then(us => (us === 0 ? 0 : Math.round((us / US_PER_CM) * 10) / 10))
             .catch(() => 0);
+    }
+
+    // --- 音 -------------------------------------------------------------
+    // デバイスへ送るのは「開始 Hz・終了 Hz・長さ ms」の並びだけ。
+    // ドレミ・拍・テンポはすべてここで Hz と ms に直す。
+
+    /**
+     * ノート番号 (60 = 真ん中のド) を Hz にする。デバイスへは整数で送る。
+     * @param {*} note - ノート番号
+     * @returns {number} Hz
+     */
+    _toneNoteHz (note) {
+        const n = Math.min(TONE_NOTE_RANGE.max, Math.max(TONE_NOTE_RANGE.min, Cast.toNumber(note)));
+        return Math.round(440 * Math.pow(2, (n - 69) / 12));
+    }
+
+    /**
+     * 鍵盤で押した音を PC で鳴らす。ブザーに近い矩形波にしてある。
+     *
+     * Hz はブザーへ送るのと同じ整数にする。鍵盤で聞いた音とブザーの音を揃えるため。
+     * @param {number} note - ノート番号
+     * @param {string} category - 鍵盤のあるブロックの拡張機能の名前
+     */
+    _previewNote (note, category) {
+        if (category !== this.variant.EXTENSION_NAME) return;
+        if (this._isRecordPiano()) this._recordNote(note);
+        const engine = this.runtime.audioEngine;
+        if (!engine) return;
+        const context = engine.audioContext;
+        const start = context.currentTime;
+        const end = start + TONE_PREVIEW_SEC;
+        const osc = context.createOscillator();
+        const gain = context.createGain();
+        osc.type = 'square';
+        osc.frequency.value = this._toneNoteHz(note);
+        // 切れ目でプツッと鳴らないよう、最後の 20ms で音量を下げる
+        gain.gain.setValueAtTime(TONE_PREVIEW_VOLUME, start);
+        gain.gain.setValueAtTime(TONE_PREVIEW_VOLUME, end - 0.02);
+        gain.gain.linearRampToValueAtTime(0.0001, end);
+        osc.connect(gain);
+        gain.connect(engine.getInputNode());
+        osc.start(start);
+        osc.stop(end);
+    }
+
+    /**
+     * いま押されたピアノが、「ピアノ (60) で弾いた音」のブロックのものか。
+     *
+     * ピアノの合図 (PLAY_NOTE) には、どのブロックのピアノかが入っていない。
+     * ピアノの欄をクリックした時点で、そのブロックは選択中になり、画面上で
+     * blocklySelected の印が付く (scratch-blocks の gesture.js と block_svg.js)。
+     * ブロック一覧に並んでいるブロックでも同じ。その印の付いたブロックに、
+     * このブロックの文字が書かれているかで見分ける。
+     *
+     * ⚠ Scratch の画面の内部の作り (印の名前、文字の置き方) に頼っている。
+     *   試作で確かめること。Scratch や Xcratch の作りが変わると効かなくなる。
+     *
+     * @returns {boolean} 記録のブロックのピアノなら true
+     */
+    _isRecordPiano () {
+        if (typeof document === 'undefined') return false;
+        const selected = document.querySelector('.blocklySelected');
+        if (!selected) return false;
+        // ブロックの文字は、ブロックの <g> の直下の <text> に置かれる。直下だけを見るのは、
+        // はめ込まれたブロックや、下につながったブロックの文字を拾わないため
+        const texts = Array.from(selected.children)
+            .filter(el => el.tagName.toLowerCase() === 'text')
+            .map(el => el.textContent.trim());
+        const pieces = this._getText('recordedNotes').split('[NOTE]')
+            .map(t => t.trim())
+            .filter(t => t);
+        return pieces.every(p => texts.includes(p));
+    }
+
+    /**
+     * 記録先の「メロディ」のリストを返す。無ければステージに作る (すべてのスプライト用)。
+     *
+     * 作ったときは編集画面を描き直させる。描き直さないと、変数のブロック一覧に出ない。
+     * ⚠ 描き直すと、開いているピアノは閉じる。
+     *
+     * @returns {?object} リスト (scratch-vm の Variable)。ステージがまだ無ければ null
+     */
+    _melodyList () {
+        const stage = this.runtime.getTargetForStage();
+        if (!stage) return null;
+        const editing = this.runtime.getEditingTarget() || stage;
+        const found = editing.lookupVariableByNameAndType(MELODY_LIST_NAME, 'list');
+        if (found) return found;
+        stage.createVariable(uid(), MELODY_LIST_NAME, 'list');
+        this.runtime.emit(this.runtime.constructor.BLOCKS_NEED_UPDATE);
+        return stage.lookupVariableByNameAndType(MELODY_LIST_NAME, 'list');
+    }
+
+    /**
+     * 「メロディ」のリストの中身を差し替える。上限を超えた分は捨てる。
+     * @param {Array<string>} items - 1 音 1 行
+     */
+    _setMelodyList (items) {
+        const list = this._melodyList();
+        if (!list) return;
+        list.value = items.slice(0, MELODY_LIST_MAX);
+        // 立てておかないと、ステージのリストの表示が変わらない (scratch3_data.js と同じ)
+        list._monitorUpToDate = false;
+        this.runtime.emitProjectChanged();
+    }
+
+    /** @returns {Array<string>} 「メロディ」のリストの中身。無ければ空 */
+    _melodyItems () {
+        const list = this._melodyList();
+        return list ? list.value.slice() : [];
+    }
+
+    /**
+     * メロディの文字を、リストに入れる 1 音ずつに区切る。
+     * @param {*} text - メロディの文字
+     * @returns {Array<string>} 1 音ずつ
+     */
+    _splitMelody (text) {
+        return Cast.toString(text).trim()
+            .split(/\s+/)
+            .filter(t => t);
+    }
+
+    /**
+     * ピアノで弾いた音を「メロディ」のリストの後ろに足す。
+     *
+     * ⚠ ピアノは、左右の矢印でオクターブを変えたときにも同じ合図を出す
+     *   (scratch-blocks の field_note.js、stepOctaveAnimation_)。キーを叩いたときと
+     *   区別できないので、その音も記録される。要らなければリストから消す。
+     *
+     * @param {number} note - ノート番号
+     */
+    _recordNote (note) {
+        const n = Math.round(Cast.toNumber(note));
+        // オクターブ -1 (ノート番号 0〜11) はメロディの書き方で書けない。
+        // `C-1` の - は休符として読まれてしまう
+        if (n < 12) {
+            console.warn(`[uiapduino] ノート番号 ${n} は低すぎてメロディの文字に書けないので、記録しません。`);
+            return;
+        }
+        this._setMelodyList(this._melodyItems().concat([this._melodyNoteName(n)]));
+    }
+
+    /**
+     * ノート番号をメロディの書き方の音名にする。オクターブは必ず書く (60 → C4)。
+     * @param {number} note - ノート番号 (12 以上)
+     * @returns {string} 音名
+     */
+    _melodyNoteName (note) {
+        return MELODY_NOTE_NAMES[note % 12] + (Math.floor(note / 12) - 1);
+    }
+
+    /**
+     * メロディの文字を予約の並びにする。
+     *
+     * 読み方は MakeCode (pxt-microbit) の MelodyStringReader に合わせてある。
+     * MakeCode から写した文字が同じ音で鳴るようにするため。
+     *
+     *   音名 C〜B (小文字も可)、後ろの数字はオクターブ (書かなければ 4)
+     *   # で半音上げ、音名の後ろの b で半音下げる
+     *   - / R / r は休符。読めない音も休符になる
+     *   :数字 は長さ。単位は 4 分の 1 拍で、書かなければ 1 拍
+     *
+     * オクターブは音ごとに 4 に戻る。長さは書いた後の音にも効き続ける。
+     *
+     * @param {*} text - メロディの文字
+     * @returns {Array<Array<number>>} [開始 Hz, 終了 Hz, ms] の並び。休符は Hz が 0
+     */
+    _parseMelody (text) {
+        const s = Cast.toString(text);
+        const entries = [];
+        let i = 0;
+        let ticks = MELODY_TICKS_PER_BEAT;
+        const isDigit = c => c >= '0' && c <= '9';
+        const readNumber = () => {
+            let v = 0;
+            while (i < s.length && isDigit(s[i])) v = (v * 10) + Number(s[i++]);
+            return v;
+        };
+        const eatSpaces = () => {
+            while (i < s.length && s[i] === ' ') i++;
+        };
+
+        eatSpaces();
+        while (i < s.length) {
+            let note;
+            let modifier = 0;
+            let octave = 4;
+            while (i < s.length) {
+                const c = s[i++];
+                if (c === ' ') break;
+                if (c === '#') {
+                    modifier++;
+                } else if (c === '-' || c === 'r' || c === 'R') {
+                    if (typeof note !== 'undefined') {
+                        i--;
+                        break;
+                    }
+                    note = -1;
+                } else if (c === 'b') {
+                    // 小文字の b は、音名より前なら B、後ろならフラット
+                    if (typeof note === 'undefined') note = MELODY_NOTE_OFFSET.b;
+                    else modifier--;
+                } else if (isDigit(c)) {
+                    // 音名より前の数字は読み捨てる
+                    if (typeof note === 'undefined') continue;
+                    i--;
+                    octave = readNumber();
+                } else if (/[A-Ga-g]/.test(c)) {
+                    // 区切りの無い次の音名。ここで切って、次の音として読む
+                    if (typeof note !== 'undefined') {
+                        i--;
+                        break;
+                    }
+                    note = MELODY_NOTE_OFFSET[c.toLowerCase()];
+                } else if (c === ':') {
+                    ticks = Math.max(1, readNumber());
+                    break;
+                }
+            }
+            const ms = Math.min(0xFFFF, Math.round((ticks * 60000) / (MELODY_TICKS_PER_BEAT * this._tempo)));
+            if (typeof note === 'undefined' || note < 0) {
+                entries.push([0, 0, ms]);
+            } else {
+                const hz = this._toneNoteHz(((octave + 1) * 12) + note + modifier);
+                entries.push([hz, hz, ms]);
+            }
+            eatSpaces();
+        }
+        return entries;
+    }
+
+    /**
+     * 拍を数にする。メニューの値は '1/2' のような分数の文字列で来る。
+     * @param {*} beats - 拍
+     * @returns {number} 拍 (0〜100)
+     */
+    _toneBeats (beats) {
+        const m = Cast.toString(beats).match(/^\s*([\d.]+)\s*\/\s*([\d.]+)\s*$/);
+        const b = m ? (Number(m[1]) / Number(m[2])) : Cast.toNumber(beats);
+        if (!isFinite(b)) return 0;
+        return Math.min(TONE_BEAT_RANGE.max, Math.max(TONE_BEAT_RANGE.min, b));
+    }
+
+    /**
+     * 拍を ms にする。デバイスが受け取れる 65535ms で頭打ちにする。
+     * @param {*} beats - 拍
+     * @returns {number} ms
+     */
+    _toneBeatsMs (beats) {
+        return Math.min(0xFFFF, Math.round((this._toneBeats(beats) * 60000) / this._tempo));
+    }
+
+    /**
+     * Hz をデバイスが受け取れる範囲 (1〜65535) の整数にする。
+     * @param {*} hz - Hz
+     * @returns {number} Hz
+     */
+    _toneHz (hz) {
+        return Math.min(0xFFFF, Math.max(1, Math.round(Cast.toNumber(hz))));
+    }
+
+    /**
+     * 予約を送る。
+     *
+     * 1 コマンドに 4 つまで。それより多ければ、2 回目からは「直前の続き」として送る。
+     * 予約がいっぱいで受け付けられなかった分は、少し待って送り直す。
+     *
+     * 「終わるまで」なら、デバイスが答えた「鳴り終わるまでの ms」から
+     * TONE_LEAD_MS を引いた時間だけ待つ。次の音を先に予約へ入れるため。
+     *
+     * @param {number} pin - ピン
+     * @param {number} mode - TONE_MODE のどれか
+     * @param {Array<Array<number>>} entries - [開始 Hz, 終了 Hz, ms] の並び
+     * @returns {Promise<void>} 失敗しても reject しない
+     */
+    async _tonePlay (pin, mode, entries) {
+        if (!this.processor.isConnected()) return;
+        const voice = this._toneVoice(pin);
+        const stops = this._toneStops[voice];
+        const stopped = () => this._toneStops[voice] !== stops;
+        let sent = 0;
+        let remain = 0;
+        try {
+            while (sent < entries.length) {
+                const chunk = entries.slice(sent, sent + TONE_ENTRIES_PER_COMMAND);
+                const bytes = [];
+                // 予約 1 つは 7 バイト: [開始 Hz][終了 Hz][ms] (uint16LE) と [エフェクト]
+                chunk.forEach(e => {
+                    e.slice(0, 3).forEach(v => bytes.push(v & 0xFF, (v >> 8) & 0xFF));
+                    bytes.push(e[3] || TONE_FX.NONE);
+                });
+                const r = await this.processor.request(
+                    CMD.TONE_PLAY,
+                    [pin, sent === 0 ? mode : (mode | TONE_MODE_CONTINUE), chunk.length].concat(bytes),
+                    undefined,
+                    true
+                );
+                if (stopped()) return;
+                const took = r[0] || 0;
+                remain = (r[1] || 0) | ((r[2] || 0) << 8) | ((r[3] || 0) << 16);
+                sent += took;
+                if (took < chunk.length && mode === TONE_MODE.LOOP) {
+                    // 繰り返しのときは鳴らした分も取っておくので、待っても空きはできない
+                    console.warn(
+                        `[uiapduino] 繰り返して鳴らせるのは ${sent} 音までです。` +
+                        `残りの ${entries.length - sent} 音は鳴らしません。`
+                    );
+                    break;
+                }
+                if (took < chunk.length) {
+                    await this._toneWait(voice, TONE_RETRY_MS);
+                    if (stopped()) return;
+                }
+            }
+        } catch (e) {
+            // PWM を出せないピン (RSP_ERR) か、通信の失敗。ほかのブロックと同じく黙って終える
+            return;
+        }
+        if (mode === TONE_MODE.UNTIL_DONE && remain > TONE_LEAD_MS) {
+            await this._toneWait(voice, remain - TONE_LEAD_MS);
+        }
+    }
+
+    /**
+     * ピンがどちらの声 (タイマー) か。
+     * @param {number} pin - ピン
+     * @returns {number} 0 = TIM1、1 = TIM2
+     */
+    _toneVoice (pin) {
+        return this.variant.TONE_TIM2_PINS.includes(pin) ? 1 : 0;
+    }
+
+    /**
+     * 待つ。その声の音が止められたら、時間が来る前に終える。
+     * @param {number} voice - 0 = TIM1、1 = TIM2
+     * @param {number} ms - 待つ時間
+     * @returns {Promise<void>} 時間が来たか、止められたら resolve
+     */
+    _toneWait (voice, ms) {
+        return new Promise(resolve => {
+            const done = () => {
+                clearTimeout(timer);
+                this._toneWaiters[voice].delete(done);
+                resolve();
+            };
+            const timer = setTimeout(done, ms);
+            this._toneWaiters[voice].add(done);
+        });
+    }
+
+    /**
+     * 声の音を止めたことを、送っている途中と待っている途中のブロックに知らせる。
+     * @param {Array<number>} voices - 止めた声
+     */
+    _toneStopped (voices) {
+        voices.forEach(voice => {
+            this._toneStops[voice]++;
+            Array.from(this._toneWaiters[voice]).forEach(done => done());
+        });
+    }
+
+    playNote (args) {
+        const hz = this._toneNoteHz(args.NOTE);
+        return this._tonePlay(Cast.toNumber(args.PIN), Cast.toNumber(args.MODE),
+            [[hz, hz, this._toneBeatsMs(args.BEATS)]]);
+    }
+
+    playMelody (args) {
+        // MakeCode の playMelody と同じく、全体のテンポも変える
+        this.setTempo(args);
+        return this._tonePlay(Cast.toNumber(args.PIN), Cast.toNumber(args.MODE),
+            this._parseMelody(args.MELODY));
+    }
+
+    recordedNotes () {
+        return this._melodyItems().join(' ');
+    }
+
+    clearRecordedNotes () {
+        this._setMelodyList([]);
+    }
+
+    melodyReplace (args) {
+        this._setMelodyList(this._splitMelody(args.TEXT));
+    }
+
+    melodyAppend (args) {
+        this._setMelodyList(this._melodyItems().concat(this._splitMelody(args.TEXT)));
+    }
+
+    melodyInsert (args) {
+        const items = this._melodyItems();
+        // 1 番目より前は 1 番目、最後より後ろは後ろに足すのと同じにする
+        const at = Math.min(items.length + 1, Math.max(1, Math.round(Cast.toNumber(args.INDEX))));
+        items.splice(at - 1, 0, ...this._splitMelody(args.TEXT));
+        this._setMelodyList(items);
+    }
+
+    setToneVolume (args) {
+        if (!this.processor.isConnected()) return Promise.resolve();
+        const volume = Math.min(255, Math.max(0, Math.round(Cast.toNumber(args.VOLUME))));
+        return this.processor.request(CMD.TONE_VOLUME, [Cast.toNumber(args.TIMER), volume])
+            .catch(() => {});
+    }
+
+    playSweepEffect (args) {
+        const ms = Math.min(0xFFFF, Math.max(0, Math.round(Cast.toNumber(args.MS))));
+        return this._tonePlay(Cast.toNumber(args.PIN), Cast.toNumber(args.MODE),
+            [[this._toneHz(args.FROM), this._toneHz(args.TO), ms, Cast.toNumber(args.FX)]]);
+    }
+
+    startTone (args) {
+        // 0 以下は「止める」と読む。MakeCode でも 0Hz は無音になる
+        if (Cast.toNumber(args.FREQ) <= 0) return this.stopTone(args);
+        const hz = this._toneHz(args.FREQ);
+        return this._tonePlay(Cast.toNumber(args.PIN), TONE_MODE.LOOP, [[hz, hz, TONE_HOLD_MS]]);
+    }
+
+    playSweep (args) {
+        const ms = Math.min(0xFFFF, Math.max(0, Math.round(Cast.toNumber(args.MS))));
+        return this._tonePlay(Cast.toNumber(args.PIN), Cast.toNumber(args.MODE),
+            [[this._toneHz(args.FROM), this._toneHz(args.TO), ms]]);
+    }
+
+    restBeats (args) {
+        return this._tonePlay(Cast.toNumber(args.PIN), TONE_MODE.UNTIL_DONE,
+            [[0, 0, this._toneBeatsMs(args.BEATS)]]);
+    }
+
+    stopTone (args) {
+        const pin = Cast.toNumber(args.PIN);
+        this._toneStopped([this._toneVoice(pin)]);
+        if (!this.processor.isConnected()) return Promise.resolve();
+        return this.processor.request(CMD.TONE_STOP, [pin]).catch(() => {});
+    }
+
+    stopAllTones () {
+        return this._toneStopAll(false);
+    }
+
+    /**
+     * 音を全部止め、予約を消す。
+     * @param {boolean} resetVolume - 音量も 255 に戻すか。停止ボタンのときだけ戻す
+     * @returns {Promise<void>} 失敗しても reject しない
+     */
+    _toneStopAll (resetVolume) {
+        this._toneStopped([0, 1]);
+        if (!this.processor.isConnected()) return Promise.resolve();
+        return this.processor.request(CMD.TONE_STOP, [0xFF, resetVolume ? 1 : 0]).catch(() => {});
+    }
+
+    /**
+     * デバイスに聞く。声はタイマーに 1 つなので、答えは 2 本のピンだけ。
+     * @param {object} args - PIN
+     * @returns {Promise<boolean>} 鳴っていれば true
+     */
+    isTonePlaying (args) {
+        if (!this.processor.isConnected()) return Promise.resolve(false);
+        const pin = Cast.toNumber(args.PIN);
+        return this.processor
+            .request(CMD.TONE_STATUS, [], undefined, true)
+            .then(r => r[0] === pin || r[1] === pin)
+            .catch(() => false);
+    }
+
+    noteFrequency (args) {
+        return this._toneNoteHz(args.NOTE);
+    }
+
+    setTempo (args) {
+        const t = Cast.toNumber(args.TEMPO);
+        this._tempo = Math.min(TONE_TEMPO_RANGE.max, Math.max(TONE_TEMPO_RANGE.min, t));
+    }
+
+    changeTempo (args) {
+        this.setTempo({TEMPO: this._tempo + Cast.toNumber(args.TEMPO)});
+    }
+
+    tempo () {
+        return this._tempo;
     }
 
     // --- キーボード -----------------------------------------------------

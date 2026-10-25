@@ -171,7 +171,10 @@
 //   8 : NeoPixel を追加。NEO_BEGIN / SET / FILL / SHOW / BRIGHTNESS (0x60-0x64)。
 //       begin 後は D8 (SPI1 MOSI) を弾くようになった
 //       (7 は v0.2.2 として公開済みなので据え置けない)
-#define PROTOCOL_VERSION 8
+//   9 : 音を追加。TONE_PLAY / STOP / STATUS / VOLUME (0x70-0x73)。
+//       音の長さと切り替えは基板が持つ
+//       (8 は v0.3.1 として公開済みなので据え置けない)
+#define PROTOCOL_VERSION 9
 
 // このスケッチがどの版かを表す番号。PING の応答の上位バイトで返す。
 //
@@ -267,6 +270,15 @@
 #define CMD_NEO_FILL       0x62
 #define CMD_NEO_SHOW       0x63
 #define CMD_NEO_BRIGHTNESS 0x64
+
+// 音 (0x70 台)。
+//
+// 音の長さと切り替えは基板が持つ。Scratch は予約を先に送っておくだけ。
+// 詳細は「音」の節 (toneService()) を参照。
+#define CMD_TONE_PLAY   0x70
+#define CMD_TONE_STOP   0x71
+#define CMD_TONE_STATUS 0x72
+#define CMD_TONE_VOLUME 0x73
 
 // ダブルクリックの 2 回の間隔 (ms)。
 // Windows の既定の判定時間は 500ms なので、それより十分に短くする。
@@ -385,6 +397,11 @@ static NeoPixelmin pixels(NEOPIXELMIN_MAX_LEDS);
  */
 static bool neoOpen = false;
 
+// 「音」の節で定義する。rsp() やキー入力の待ちが使うので先に宣言しておく。
+static void waitMs(uint16_t ms);
+static void toneRelease(uint8_t pin);
+static int16_t le16(const uint8_t *p);
+
 /**
  * 応答を 1 レポート送る。uiapruby が生成するファームの rsp() と同じ。
  *
@@ -402,7 +419,7 @@ static void rsp(uint8_t status, const uint8_t *d, uint8_t len) {
   }
   for (uint32_t t = 0; WebHID.busy() && t < 800000UL; t++) {}
   WebHID.send(buf, 8);
-  delay(12);
+  waitMs(12);
 }
 
 #define rsp_ok()  rsp(RSP_OK,  0, 0)
@@ -567,7 +584,7 @@ static uint16_t measureEchoUs(uint8_t trig, uint8_t echo) {
   pinMode(echo, INPUT);
 
   digitalWrite(trig, HIGH);
-  delay(1);
+  waitMs(1);
   digitalWrite(trig, LOW);
 
   // 反応が返ってこない (未接続 / 電源なし)
@@ -584,6 +601,408 @@ static uint16_t measureEchoUs(uint8_t trig, uint8_t echo) {
   uint32_t us = (uint32_t)(SysTick->CNT - t0) / SYSTICK_PER_US;
   // 16bit に収まらない値は Scratch へ渡せない。測れなかったものとして扱う。
   return us > 0xFFFF ? 0 : (uint16_t)us;
+}
+
+// ── 音 ──────────────────────────────────────────────────────────────────────
+//
+// ⚠ このスケッチは「ドレミ」も「拍」も「テンポ」も知らない。
+//
+//   届くのは「この Hz から この Hz へ、この ms、このエフェクトで」の並びだけ。音の名前から
+//   Hz への換算も、拍から ms への換算も Scratch 側でやる。テンポを変えても
+//   音の高さの決め方を変えても、基板を焼き直さずに済む。
+//
+// 音の長さと切り替えは基板が持つ。Scratch から 1 音ずつ USB で指示すると、
+// 往復 (12〜15ms) の揺れがそのまま曲のテンポの揺れになる。Scratch は予約を
+// 先に送っておき、基板が SysTick の時刻を見て隙間なくつなぐ。
+//
+// 声 (ボイス) はタイマーに 1 つ。周波数を決める PSC / ATRLR はタイマーに
+// 1 組しかないので、同じタイマーの別のピンでは違う音を出せない。
+// 同時に鳴らせるのは TIM1 と TIM2 の 2 声。同じタイマーの別のピンで
+// 鳴らすと、前のピンの音は止まり、予約も消える。
+//
+// ⚠ 割り込みは使わない。USB はソフトウェア実装 (rv003usb) で、その割り込みを
+//   待たせると通信に響く。音の切り替えは loop() と waitMs() の中で
+//   toneService() が時刻を見て行う。距離計の Echo 待ち (最大 460ms) の間だけは
+//   µs を数えているので呼べず、そのぶん切り替えが遅れる。
+//
+// ⚠ 鳴らしている間は PWMmin の設定 (ATRLR = 255) を使わない。
+//   PWMmin は PSC だけで周波数を決めるので、出せるのは 187500 ÷ 整数 (48MHz)
+//   で、ド8 では +31 セントずれる。PSC を ATRLR が 16 ビットに収まる最小にし、
+//   ATRLR で合わせれば、可聴域ではほぼずれない。
+//   止めたら PSC / ATRLR を PWMmin の値に戻す。同じタイマーのアナログ出力のため。
+//
+// ⚠ ATRLR と比較値はプリロードを有効にして書く。周期の途中で ATRLR を
+//   今のカウンタより小さくすると、カウンタが 65535 まで回って音が途切れる。
+//   周波数を変える音は 1ms ごとに書き換えるので、これが毎回起きてしまう。
+
+/** 1 声が予約できる音の数。8 バイト (7 バイト + 詰め物) × 16 × 2 声 = 256 バイト */
+#define TONE_QUEUE 16
+
+/** SysTick の 1ms あたりのカウント数 */
+#define SYSTICK_PER_MS (F_CPU / 1000UL)
+
+/** ピンが空いていることを表す値 */
+#define TONE_NO_PIN 0xFF
+
+/** 予約 1 つ。TONE_PLAY で送られてくる 7 バイトそのまま */
+struct ToneEntry {
+  uint16_t f0;  // 開始 Hz。0 なら休符
+  uint16_t f1;  // 終了 Hz。f0 と違えば、その間をリニアに変える
+  uint16_t ms;  // 長さ
+  uint8_t fx;   // エフェクト (TONE_FX_*)
+};
+
+/** TONE_PLAY で送られてくる予約 1 つのバイト数 */
+#define TONE_ENTRY_BYTES 7
+
+// エフェクト。MakeCode の「サウンド」のエフェクトに倣う。
+//
+// どれも三角波で揺らす。周期と深さは耳で決めるための仮の値で、
+// 実機で鳴らしてから直す。
+//
+// ⚠ ウォーブルは MakeCode と違い、不規則には揺らさない。ビブラートを
+//   速く深くしたもの。乱数を引き込むと Flash を食う。
+#define TONE_FX_NONE    0
+#define TONE_FX_VIBRATO 1  // 音の高さを揺らす
+#define TONE_FX_TREMOLO 2  // 音の大きさを揺らす
+#define TONE_FX_WARBLE  3  // 音の高さを速く深く揺らす
+
+#define TONE_VIBRATO_MS      160  // 揺れ 1 回の長さ (約 6Hz)
+#define TONE_VIBRATO_PERMILLE 20  // 高さの揺れ幅 (±2%、約 ±35 セント)
+#define TONE_WARBLE_MS        50  // 約 20Hz
+#define TONE_WARBLE_PERMILLE  60  // ±6%、約 ±100 セント
+#define TONE_TREMOLO_MS      160  // 大きさは 0 から設定の音量までを行き来する
+
+struct ToneVoice {
+  uint8_t pin;               // 鳴らしているピン。TONE_NO_PIN なら空き
+  uint8_t pos;               // 今鳴らしている予約の位置
+  uint8_t count;             // 予約の数
+  bool loop;                 // 予約の最後まで行ったら先頭へ戻る
+  uint8_t vol;               // 音量 0-255。255 で duty 50%
+  volatile uint32_t *cvr;    // ピンのチャンネルの比較値レジスタ
+  uint32_t start;            // 今の音を始めた SysTick
+  uint32_t ticks;            // 今の音の長さ (SysTick)
+  uint32_t lastSweep;        // 周波数を最後に計算し直した SysTick
+  ToneEntry q[TONE_QUEUE];
+};
+
+/**
+ * [0] が TIM1、[1] が TIM2。
+ *
+ * 初期値は setup() の toneInit() で入れる。ここに書くと .data になり、
+ * 構造体まるごと (約 240 バイト) の初期値が Flash に載るため。
+ */
+static ToneVoice voices[2];
+
+// ⚠ 声を受け取る関数は、構造体へのポインタではなく番号 (0 / 1) を取る。
+//   Arduino は関数の宣言を自動で作ってスケッチの先頭近くに置くので、
+//   引数に ToneVoice を書くと、構造体の定義より前でその名前が使われてしまう。
+
+static TIM_TypeDef *voiceTim(uint8_t i) { return i ? TIM2 : TIM1; }
+
+/** ピンが属するタイマーの声。呼ぶ前に pwmPinOk() で確かめてあること */
+static uint8_t voiceOf(uint8_t pin) { return pwmPinIsTim2(pin) ? 1 : 0; }
+
+/** ピンのチャンネル番号 (1-4)。PWMmin.h の Pwm_write() の一覧と同じ */
+static uint8_t pwmChannel(uint8_t pin) {
+  switch (pin) {
+    case 12: return 1;
+    case 0:  return 2;
+    case 5:  return 3;
+    case 6:  return 4;
+#ifdef PWMMIN_TIM2_REMAP3
+    case 3:  return 1;
+    case 9:  return 2;
+    case 16: return 3;
+    case 15: return 4;
+#endif
+  }
+  return 3;  // HID 版の D2 (TIM2-CH3)
+}
+
+/** 比較値のプリロード (OCxPE) を切り替える */
+static void chPreload(TIM_TypeDef *t, uint8_t ch, bool on) {
+  volatile uint16_t *r = ch <= 2 ? &t->CHCTLR1 : &t->CHCTLR2;
+  uint16_t bit = (ch & 1) ? 0x0008 : 0x0800;
+  if (on) *r |= bit;
+  else    *r &= (uint16_t)~bit;
+}
+
+static void toneInit() {
+  for (uint8_t i = 0; i < 2; i++) {
+    voices[i].pin = TONE_NO_PIN;
+    voices[i].vol = 255;
+  }
+}
+
+/**
+ * 周波数と音量を書く。hz = 0 なら無音 (比較値 0 で Low のまま)。
+ *
+ * 1 周期の CPU クロック数を (PSC+1) × (ATRLR+1) に分ける。
+ * PSC は ATRLR が 16 ビットに収まる最小の値にする。小さいほど ATRLR の
+ * 目盛が細かくなり、狙った周波数に近づく。
+ *
+ * プリロードしてあるので、書いた値は次の周期の頭から効く。
+ */
+static void voiceOut(uint8_t i, uint16_t hz, uint8_t vol) {
+  ToneVoice *v = &voices[i];
+  TIM_TypeDef *t = voiceTim(i);
+  if (hz == 0) {
+    *v->cvr = 0;
+    return;
+  }
+  uint32_t total = (F_CPU + hz / 2) / hz;
+  uint32_t div = ((total - 1) >> 16) + 1;
+  uint32_t arr = (total + div / 2) / div;
+  t->PSC = (uint16_t)(div - 1);
+  t->ATRLR = (uint16_t)(arr - 1);
+  *v->cvr = (arr * vol) >> 9;
+}
+
+/** 予約の pos 番目を鳴らし始める */
+static void voiceBegin(uint8_t i) {
+  ToneVoice *v = &voices[i];
+  ToneEntry *e = &v->q[v->pos];
+  v->start = v->lastSweep = SysTick->CNT;
+  v->ticks = (uint32_t)e->ms * SYSTICK_PER_MS;
+  voiceOut(i, e->f0, v->vol);
+  // 次の周期を待たずに今すぐ切り替える。待つと、低い音の後では
+  // 前の音の 1 周期ぶん (8Hz なら 125ms) 次の音が遅れる。
+  voiceTim(i)->SWEVGR = TIM_UG;
+}
+
+/** ピンを声に割り当てる */
+static void voiceTake(uint8_t i, uint8_t pin) {
+  ToneVoice *v = &voices[i];
+  TIM_TypeDef *t = voiceTim(i);
+  Pwm_write(pin, 0);  // ピンを PWM 出力にし、タイマーを動かす
+  uint8_t ch = pwmChannel(pin);
+  v->cvr = &t->CH1CVR + (ch - 1);
+  chPreload(t, ch, true);
+  t->CTLR1 |= TIM_ARPE;
+  v->pin = pin;
+}
+
+/** 声を止め、予約を消し、タイマーを PWMmin の設定に戻す */
+static void voiceStop(uint8_t i) {
+  ToneVoice *v = &voices[i];
+  v->count = 0;
+  v->pos = 0;
+  v->loop = false;
+  if (v->pin == TONE_NO_PIN) return;
+  TIM_TypeDef *t = voiceTim(i);
+  *v->cvr = 0;
+  chPreload(t, pwmChannel(v->pin), false);
+  t->CTLR1 &= (uint16_t)~TIM_ARPE;
+  t->PSC = i ? _pm_psc2 : _pm_psc1;
+  t->ATRLR = 255;
+  t->SWEVGR = TIM_UG;
+  v->pin = TONE_NO_PIN;
+}
+
+/**
+ * アナログ出力・サーボで PWM を出しているピン (ビットの位置 = ピン番号)。
+ *
+ * 音とアナログ出力・サーボは、ブロックとして排他にしてある。後から使った方を動かし、
+ * 先の方を止める。音を鳴らすときに、ここに立っているピンの出力を 0 にする。
+ *
+ * 排他にするのは、使う人がタイマーを選べないため。「サーボの設定」にタイマーの
+ * 区別は無く、同じタイマーのピンなら、音が切り替わるたびにサーボの周波数を上書きしてしまう。
+ */
+static uint32_t pwmOutPins = 0;
+
+/** アナログ出力・サーボの出力を全部 0 にする。音を鳴らす前に呼ぶ */
+static void pwmOutStop() {
+  for (uint8_t pin = 0; pwmOutPins; pin++) {
+    if (pwmOutPins & (1UL << pin)) {
+      Pwm_write(pin, 0);
+      pwmOutPins &= ~(1UL << pin);
+    }
+  }
+}
+
+/**
+ * そのピンで鳴っていれば止める。
+ *
+ * ピンを別の用途 (デジタル出力・アナログ出力・サーボ・距離計・シリアル) に
+ * 使うコマンドの前に呼ぶ。止めないと、声はピンを失ったまま
+ * 「鳴っている」と答え続ける。
+ */
+static void toneRelease(uint8_t pin) {
+  uint8_t i = voiceOf(pin);
+  if (voices[i].pin == pin) voiceStop(i);
+}
+
+/**
+ * 声を進める。loop() の空き時間と waitMs() の中から呼ばれる。
+ *
+ * 今の音が終わっていれば次の予約へ進む。周波数を変える音なら、
+ * 1ms ごとに今の周波数を計算し直す。
+ */
+static void toneService() {
+  for (uint8_t i = 0; i < 2; i++) {
+    ToneVoice *v = &voices[i];
+    if (v->pin == TONE_NO_PIN) continue;
+    uint32_t now = SysTick->CNT;
+    uint32_t el = now - v->start;
+
+    if (el >= v->ticks) {
+      if (++v->pos >= v->count) {
+        if (!v->loop) {
+          voiceStop(i);
+          continue;
+        }
+        v->pos = 0;
+      }
+      voiceBegin(i);
+      continue;
+    }
+
+    ToneEntry *e = &v->q[v->pos];
+    bool sweep = e->f1 && e->f1 != e->f0;
+    if (e->f0 && (sweep || e->fx) && now - v->lastSweep >= SYSTICK_PER_MS) {
+      v->lastSweep = now;
+      uint32_t elMs = el / SYSTICK_PER_MS;
+      int32_t hz = e->f0;
+      if (sweep) {
+        // 進み具合を 1024 分率にする。ms のまま掛けると 32 ビットを超える
+        // (65535Hz × 65535ms)。64 ビットの演算は Flash を食うので使わない。
+        uint32_t frac = (elMs << 10) / e->ms;
+        hz += (((int32_t)e->f1 - hz) * (int32_t)frac) >> 10;
+      }
+      uint8_t vol = v->vol;
+      if (e->fx) {
+        uint16_t period = e->fx == TONE_FX_WARBLE ? TONE_WARBLE_MS
+                        : e->fx == TONE_FX_TREMOLO ? TONE_TREMOLO_MS : TONE_VIBRATO_MS;
+        // 三角波 0〜255
+        uint32_t up = ((elMs % period) << 9) / period;
+        int32_t tri = up < 256 ? (int32_t)up : 511 - (int32_t)up;
+        if (e->fx == TONE_FX_TREMOLO) {
+          vol = (uint8_t)(((uint32_t)vol * (uint32_t)tri) / 255);
+        } else {
+          int32_t depth = e->fx == TONE_FX_WARBLE ? TONE_WARBLE_PERMILLE : TONE_VIBRATO_PERMILLE;
+          hz += (hz * (tri * 2 - 255) * depth) / 255000;
+        }
+      }
+      voiceOut(i, (uint16_t)(hz < 1 ? 1 : hz), vol);
+    }
+  }
+}
+
+/**
+ * delay() の代わり。待つ間も音を進める。
+ *
+ * 応答 (rsp() の 12ms) やキー入力の待ちの間に delay() で止まっていると、
+ * その間は次の音へ進めず、音の長さが伸びる。
+ */
+static void waitMs(uint16_t ms) {
+  uint32_t t0 = SysTick->CNT;
+  uint32_t ticks = (uint32_t)ms * SYSTICK_PER_MS;
+  while ((uint32_t)(SysTick->CNT - t0) < ticks) toneService();
+}
+
+/**
+ * 音のコマンドを実行する。
+ * @param cmd コマンド ID (0x70-0x73)
+ * @param buf 受信した Feature Report 32 バイト
+ */
+static void doTone(uint8_t cmd, const uint8_t *buf) {
+  uint8_t pin = buf[1];
+
+  if (cmd == CMD_TONE_STATUS) {
+    // [0] = TIM1 で鳴らしているピン、[1] = TIM2 で鳴らしているピン。空きは 0xFF
+    uint8_t d[2] = { voices[0].pin, voices[1].pin };
+    rsp_bytes(d, 2);
+    return;
+  }
+
+  if (cmd == CMD_TONE_STOP && pin == 0xFF) {
+    // [2] が 0 でなければ音量も戻す。停止ボタンから来たときだけ立っている。
+    // 「すべての音を停止する」ブロックでは音量は戻さない。
+    voiceStop(0);
+    voiceStop(1);
+    if (buf[2]) voices[0].vol = voices[1].vol = 255;
+    rsp_ok();
+    return;
+  }
+
+  if (!pwmPinOk(pin) || !digitalPinOk(pin)) {
+    rsp_err();
+    return;
+  }
+  uint8_t i = voiceOf(pin);
+  ToneVoice *v = &voices[i];
+
+  if (cmd == CMD_TONE_STOP) {
+    if (v->pin == pin) voiceStop(i);
+    rsp_ok();
+    return;
+  }
+
+  // ここから下 (音量と鳴らす) は「鳴らす」関連のブロック。アナログ出力・サーボを止める
+  pwmOutStop();
+
+  if (cmd == CMD_TONE_VOLUME) {
+    // 声 (タイマー) ごとに持つ。同じタイマーのほかのピンの音量も変わる。
+    // 鳴っている音にもすぐ効かせる。休符の間は無音のまま。
+    v->vol = buf[2];
+    if (v->pin != TONE_NO_PIN && v->q[v->pos].f0) {
+      *v->cvr = ((uint32_t)(voiceTim(i)->ATRLR + 1) * v->vol) >> 9;
+    }
+    rsp_ok();
+    return;
+  }
+
+  // CMD_TONE_PLAY: [2]=mode [3]=n [4..]=予約 × n (7 バイトずつ、最大 4 つ = [4..31])
+  //
+  // mode の下位 2 ビット: 0 = 後ろに足す / 1 = 替えて 1 回 / 2 = 替えて繰り返す
+  // 0x80 が立っていれば直前の続き。替えずに足す (長いメロディを分けて送るため)
+  uint8_t mode = buf[2];
+  uint8_t n = buf[3] > 4 ? 4 : buf[3];
+  bool replace = !(mode & 0x80) && (mode & 3);
+
+  // 同じタイマーの別のピンで鳴っていたら、そちらは止めて予約も消す
+  if (v->pin != pin || replace) voiceStop(i);
+  if (replace) v->loop = (mode & 3) == 2;
+
+  // 予約がいっぱいなら、鳴らし終わった分を詰める (今鳴っている音は残す)。
+  // 繰り返しのときは鳴らし終わった分もまた使うので詰めない。
+  if (!v->loop && v->pos && v->count + n > TONE_QUEUE) {
+    for (uint8_t k = v->pos; k < v->count; k++) v->q[k - v->pos] = v->q[k];
+    v->count -= v->pos;
+    v->pos = 0;
+  }
+
+  // 入る分だけ受け付ける。入りきらなかった分は、Scratch が空きを見て送り直す
+  uint8_t took = 0;
+  const uint8_t *p = &buf[4];
+  while (took < n && v->count < TONE_QUEUE) {
+    ToneEntry *e = &v->q[v->count++];
+    e->f0 = (uint16_t)le16(p);
+    e->f1 = (uint16_t)le16(p + 2);
+    e->ms = (uint16_t)le16(p + 4);
+    e->fx = p[6];
+    p += TONE_ENTRY_BYTES;
+    took++;
+  }
+
+  if (v->pin == TONE_NO_PIN && v->count) {
+    voiceTake(i, pin);
+    voiceBegin(i);
+  }
+
+  // 予約が鳴り終わるまでの ms。「終わるまで」のブロックがこれを見て待つ。
+  // 繰り返しのときは終わらないので 0。
+  uint32_t remain = 0;
+  if (v->pin != TONE_NO_PIN && !v->loop) {
+    uint32_t el = SysTick->CNT - v->start;
+    remain = (v->ticks > el ? v->ticks - el : 0) / SYSTICK_PER_MS;
+    for (uint8_t k = v->pos + 1; k < v->count; k++) remain += v->q[k].ms;
+  }
+  uint8_t room = (uint8_t)(TONE_QUEUE - v->count + (v->loop ? 0 : v->pos));
+  uint8_t d[5] = { took, (uint8_t)remain, (uint8_t)(remain >> 8),
+                   (uint8_t)(remain >> 16), room };
+  rsp_bytes(d, 5);
 }
 
 // ── シリアル通信 ────────────────────────────────────────────────────────────
@@ -616,6 +1035,9 @@ static void doSerial(uint8_t cmd, const uint8_t *buf) {
     // Remap3 版では D15 / D16 も PWM を出せる。出したまま begin すると、
     // TIM2 のチャンネルが生きたままピンを USART1 に渡すことになる。先に止める。
     // HID 版の D15 / D16 は PWM を出せないので要らない。
+    toneRelease(PIN_UART_TX);
+    toneRelease(PIN_UART_RX);
+    pwmOutPins &= ~((1UL << PIN_UART_TX) | (1UL << PIN_UART_RX));
     Pwm_stop(PIN_UART_TX);
     Pwm_stop(PIN_UART_RX);
 #endif
@@ -676,7 +1098,7 @@ static void serialNotify() {
   for (uint32_t t = 0; WebHID.busy() && t < 800000UL; t++) {}
   WebHID.send(d, 8);
   notifyArmed = false;
-  delay(12);
+  waitMs(12);
 }
 
 // ── NeoPixel ────────────────────────────────────────────────────────────────
@@ -925,7 +1347,7 @@ static void keyTap(uint8_t k) {
   }
 
   Keyboard.press(base);
-  delay(20);
+  waitMs(20);
   Keyboard.release(base);
 
   // 押しっぱなしの状態へ戻す
@@ -933,7 +1355,7 @@ static void keyTap(uint8_t k) {
     if (shiftHeld) Keyboard.press(KEY_LEFT_SHIFT);
     else           Keyboard.release(KEY_LEFT_SHIFT);
   }
-  delay(20);
+  waitMs(20);
 }
 
 /**
@@ -1023,7 +1445,7 @@ static void doMouse(uint8_t cmd, const uint8_t *buf) {
       int count = n < 0 ? -n : n;
       for (int i = 0; i < count; i++) {
         Mouse.move(0, 0, dir);
-        delay(10);
+        waitMs(10);
       }
       rsp_ok();
       break;
@@ -1036,7 +1458,7 @@ static void doMouse(uint8_t cmd, const uint8_t *buf) {
 
     case CMD_MOUSE_DBLCLICK:
       Mouse.click(a);
-      delay(DBLCLICK_GAP_MS);
+      waitMs(DBLCLICK_GAP_MS);
       Mouse.click(a);
       rsp_ok();
       break;
@@ -1051,9 +1473,9 @@ static void doMouse(uint8_t cmd, const uint8_t *buf) {
       int dy = le16(&buf[3]);
       uint8_t button = buf[5];
       Mouse.press(button);
-      delay(20);  // press を確実にホストへ届けてから動かす
+      waitMs(20);  // press を確実にホストへ届けてから動かす
       Mouse.moveLarge(dx, dy, 0, stepsForMove(dx, dy));
-      delay(20);
+      waitMs(20);
       Mouse.release(button);
       rsp_ok();
       break;
@@ -1090,6 +1512,7 @@ void setup() {
 
   // 前回の書き込み前に押しっぱなしだったものが残っている可能性がある
   releaseAllInput();
+  toneInit();
 
   uint8_t ready[8] = { READY_MARKER, 0, 0, 0, 0, 0, 0, 0 };
   WebHID.send(ready, 8);
@@ -1103,10 +1526,13 @@ void loop() {
     // 応答を送っている最中に割り込ませないよう、ここ以外では呼ばない。
     serialNotify();
 
+    // 予約された音を進める
+    toneService();
+
     // 押しっぱなしのまま Scratch が黙り込んだら、こちらの判断で離す。
     // 何も押されていないときは数えないので、普段のループは今までどおり空回りする。
     if (anythingHeld()) {
-      delay(1);
+      waitMs(1);
       if (++heldMs >= HOLD_TIMEOUT_MS) releaseAllInput();
     }
     return;
@@ -1148,6 +1574,13 @@ void loop() {
     return;
   }
 
+  // 音も同じ理由でマウスの判定より前に置く。ピンの検査は doTone() の中でする
+  // (TONE_STOP / TONE_STATUS は 0xFF を「全部」の意味で受け取るため)。
+  if (cmd >= CMD_TONE_PLAY && cmd <= CMD_TONE_VOLUME) {
+    doTone(cmd, buf);
+    return;
+  }
+
   if (cmd >= CMD_MOUSE_MOVE) {
     doMouse(cmd, buf);
     return;
@@ -1176,6 +1609,17 @@ void loop() {
   if (!digitalPinOk(pin)) {
     rsp_err();
     return;
+  }
+
+  // ピンを別の用途に使うなら、そこで鳴っている音を先に止める。
+  // 読むだけなら止めない。距離計は Echo のピンも使う。
+  if (cmd != CMD_DIGITAL_READ) {
+    toneRelease(pin);
+    pwmOutPins &= ~(1UL << pin);
+  }
+  if (cmd == CMD_DISTANCE) {
+    toneRelease(val);
+    if (val < 32) pwmOutPins &= ~(1UL << val);
   }
 
   switch (cmd) {
@@ -1244,8 +1688,12 @@ void loop() {
         rsp_err();
         break;
       }
+      // 音とは排他。後から使ったこちらを動かし、鳴っている音は全部止める
+      voiceStop(0);
+      voiceStop(1);
       pwmSetFreq(pin, hz);
       Pwm_write(pin, val);
+      pwmOutPins |= 1UL << pin;
       rsp_ok();
       break;
     }

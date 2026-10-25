@@ -116,3 +116,21 @@ export const PWM_PIN_ITEMS = [
  * @type {number}
  */
 export const PWM_DEFAULT_PIN = 5;
+
+/**
+ * TIM2 で PWM を出すピン。音の声はタイマーに 1 つなので、どちらの声かをこれで決める。
+ * デバイスの pwmPinIsTim2() と同じ。
+ * @type {Array<number>}
+ */
+export const TONE_TIM2_PINS = [3, 9, 15, 16];
+
+/**
+ * 音量のブロックのメニュー。音量はタイマーごとに 1 つなので、タイマーのピンの組を並べる。
+ *
+ * 値はその組のピンのどれか 1 本。デバイスはピンからタイマーを決める (voiceOf())。
+ * @type {Array<{text: string, value: string}>}
+ */
+export const TONE_TIMER_ITEMS = [
+    {text: 'D0・D5・D6・D12', value: '0'},
+    {text: 'D3・D9・D15・D16', value: '3'}
+];
